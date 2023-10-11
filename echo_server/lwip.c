@@ -27,6 +27,9 @@
 #define TX_CH  3
 #define ARP    7
 
+#define PTX_COND(a,b,c) (a!=(void *)NULL) && !ring_empty(b) && !ring_full(c)
+#define _unused(x) ((void)(x))
+
 /* Memory regions. These all have to be here to keep compiler happy */
 uintptr_t rx_free;
 uintptr_t rx_used;
@@ -288,7 +291,14 @@ process_tx_queue(void)
     int err;
     struct pbuf *current = state.head;
     struct pbuf *temp;
-    while(current != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
+
+    /* If no work to be done, re-set the flag */
+    if (!PTX_COND(current, state.tx_ring.free_ring, state.tx_ring.used_ring) && ring_empty(state.tx_ring.free_ring)) request_free_ntfn(&state.tx_ring);
+
+    while (PTX_COND(current, state.tx_ring.free_ring, state.tx_ring.used_ring)) {
+        /* If work has been created, set flag to false to be reset later */
+        cancel_free_ntfn(&state.tx_ring);
+
         uintptr_t buffer = alloc_tx_buffer(current->tot_len);
         if (buffer == (uintptr_t) NULL) {
             print("process_tx_queue() could not alloc_tx_buffer\n");
@@ -331,22 +341,25 @@ process_tx_queue(void)
         current = current->next_chain;
         pbuf_free(temp);
         state.num_pbufs--;
+
+        /* Set the flag before (probably) processing the last packet AND only if the tx free ring is empty */
+        if (!PTX_COND(current, state.tx_ring.free_ring, state.tx_ring.used_ring) && ring_empty(state.tx_ring.free_ring)) request_free_ntfn(&state.tx_ring);
     }
 
     // if curr != NULL, we need to make sure we don't lose it and can come back
     state.head = current;
-    if (!state.head) {
-        // no longer need a notification from the tx mux. 
-        cancel_free_ntfn(&state.tx_ring);
-    } else {
-        request_free_ntfn(&state.tx_ring);
-    }
 }
 
 void
 process_rx_queue(void)
 {
+    /* If no work to be done, re-set the flag */
+    if (ring_empty(state.rx_ring.used_ring)) request_used_ntfn(&state.rx_ring);
+
     while (!ring_empty(state.rx_ring.used_ring)) {
+        /* If work has been created, set flag to false to be reset later */
+        cancel_used_ntfn(&state.rx_ring);
+
         uintptr_t addr;
         unsigned int len;
         void *cookie;
@@ -360,6 +373,9 @@ process_rx_queue(void)
             print("LWIP|ERROR: netif.input() != ERR_OK");
             pbuf_free(p);
         }
+
+        /* If this is likely to be the last loop, set the flag */
+        if (ring_empty(state.rx_ring.used_ring)) request_used_ntfn(&state.rx_ring);
     }
 }
 
@@ -498,6 +514,7 @@ void init(void)
 
     request_used_ntfn(&state.rx_ring);
     request_used_ntfn(&state.tx_ring);
+    request_free_ntfn(&state.tx_ring);
 
     if (notify_rx && state.rx_ring.free_ring->notify_reader) {
         notify_rx = false;
@@ -544,6 +561,7 @@ void notified(sel4cp_channel ch)
     }
     
     if (notify_rx && state.rx_ring.free_ring->notify_reader) {
+        state.rx_ring.free_ring->notify_reader = false;
         notify_rx = false;
         if (!have_signal) {
             sel4cp_notify_delayed(RX_CH);
@@ -553,6 +571,7 @@ void notified(sel4cp_channel ch)
     }
 
     if (notify_tx && state.tx_ring.used_ring->notify_reader) {
+        state.tx_ring.used_ring->notify_reader = false;
         notify_tx = false;
         if (!have_signal) {
             sel4cp_notify_delayed(TX_CH);

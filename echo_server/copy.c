@@ -21,17 +21,27 @@ uintptr_t uart_base;
 #define NUM_BUFFERS 512
 #define SHARED_DMA_SIZE (BUF_SIZE * NUM_BUFFERS)
 
+#define _unused(x) ((void)(x))
+#define PRX_COND(a,b,c,d) !ring_empty(a) && !ring_empty(b) && !ring_full(c) && !ring_full(d)
+
 ring_handle_t rx_ring_mux;
 ring_handle_t rx_ring_cli;
 
 void process_rx_complete(void)
 {
-    uint64_t enqueued = 0;
+    bool enqueued = false;
+
+    /* If no work to be done, re-set the flag */
+    if (!PRX_COND(rx_ring_mux.used_ring, rx_ring_cli.free_ring, rx_ring_mux.free_ring, rx_ring_cli.used_ring)) {
+        rx_ring_cli.free_ring->notify_reader = true;
+        rx_ring_mux.used_ring->notify_reader = true;
+    }
+
     // We only want to copy buffers if all the dequeues and enqueues will be successful
-    while (!ring_empty(rx_ring_mux.used_ring) &&
-            !ring_empty(rx_ring_cli.free_ring) &&
-            !ring_full(rx_ring_mux.free_ring) &&
-            !ring_full(rx_ring_cli.used_ring)) {
+    while (PRX_COND(rx_ring_mux.used_ring, rx_ring_cli.free_ring, rx_ring_mux.free_ring, rx_ring_cli.used_ring)) {
+        /* If work has been created, set flag to false to be reset later */
+        rx_ring_cli.free_ring->notify_reader = false;
+        rx_ring_mux.used_ring->notify_reader = false;
 
         uintptr_t m_addr = 0, c_addr = 0;
         unsigned int m_len = 0, c_len = 0;
@@ -76,23 +86,23 @@ void process_rx_complete(void)
         err = enqueue_free(&rx_ring_mux, m_addr, BUF_SIZE, cookie);
         assert(!err);
 
-        enqueued += 1;
-    }
+        enqueued = true;
 
-    if (!ring_empty(rx_ring_mux.used_ring)) {
-        // we want to be notified when this changes so we can continue
-        // enqueuing packets to the client.
-        rx_ring_cli.free_ring->notify_reader = true;
-    } else {
-        rx_ring_cli.free_ring->notify_reader = false;
+        /* If this is likely to be the last loop, set the flag */
+        if (!PRX_COND(rx_ring_mux.used_ring, rx_ring_cli.free_ring, rx_ring_mux.free_ring, rx_ring_cli.used_ring)) {
+            rx_ring_cli.free_ring->notify_reader = true;
+            rx_ring_mux.used_ring->notify_reader = true;
+        }
     }
 
     if (rx_ring_cli.used_ring->notify_reader && enqueued) {
+        rx_ring_cli.used_ring->notify_reader = false;
         sel4cp_notify(CLIENT_CH);
     }
 
     /* We want to inform the mux that more free buffers are available */
     if (enqueued && rx_ring_mux.free_ring->notify_reader) {
+        rx_ring_mux.free_ring->notify_reader = false;
         sel4cp_notify_delayed(MUX_RX_CH);
     }
 }

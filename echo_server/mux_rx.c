@@ -31,6 +31,9 @@ uintptr_t uart_base;
 #define BUF_SIZE 2048
 #define NUM_BUFFERS 512
 
+#define PRX_COND(a,b) !ring_empty(a) && !ring_full(b)
+#define _unused(x) ((void)(x))
+
 typedef struct state {
     /* Pointers to shared buffers */
     ring_handle_t rx_ring_drv;
@@ -119,8 +122,12 @@ void process_rx_complete(void)
         determine whether we need to notify the driver in 
         process_rx_free() as we dropped some packets */
     dropped = 0;
+    /* If no work to be done, re-set the flag */
+    if (ring_empty(state.rx_ring_drv.used_ring)) state.rx_ring_drv.used_ring->notify_reader = true;
 
     while (!ring_empty(state.rx_ring_drv.used_ring)) {
+        /* If work has been created, set flag to false to be reset later */
+        state.rx_ring_drv.used_ring->notify_reader = false;
         uintptr_t addr = 0;
         unsigned int len = 0;
         void *cookie = NULL;
@@ -162,21 +169,18 @@ void process_rx_complete(void)
             }
             dropped++;
         }
+
+        /* If this is likely to be the last loop, set the flag */
+        if (ring_empty(state.rx_ring_drv.used_ring)) state.rx_ring_drv.used_ring->notify_reader = true;
     }
 
     /* Loop over bitmap and see who we need to notify. */
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client]) {
+            state.rx_ring_clients[client].used_ring->notify_reader = false;
             sel4cp_notify(client);
         }
-
-        if (state.rx_ring_drv.free_ring->notify_reader) {
-            // ask the client to notify when done.
-            state.rx_ring_clients[client].free_ring->notify_reader = true;
-        } else {
-            state.rx_ring_clients[client].free_ring->notify_reader = false;
-        }
-    }
+    }    
 }
 
 // Loop over all client rings and return unused rx buffers to the driver
@@ -187,9 +191,16 @@ bool process_rx_free(void)
      * notify it only once.
      */
     bool enqueued = false;
-    bool was_empty = ring_empty(state.rx_ring_drv.free_ring);
     for (int i = 0; i < NUM_CLIENTS; i++) {
-        while (!ring_empty(state.rx_ring_clients[i].free_ring) && !ring_full(state.rx_ring_drv.free_ring)) {
+
+        /* If no work to be done, re-set the flag */
+        if (!PRX_COND(state.rx_ring_clients[i].free_ring, state.rx_ring_drv.free_ring)) {
+            state.rx_ring_clients[i].free_ring->notify_reader = true;
+        }
+
+        while (PRX_COND(state.rx_ring_clients[i].free_ring, state.rx_ring_drv.free_ring)) {
+            /* If work has been created, set flag to false to be reset later */
+            state.rx_ring_clients[i].free_ring->notify_reader = false;
             uintptr_t addr = 0;
             unsigned int len = 0;
             void *buffer = NULL;
@@ -207,6 +218,11 @@ bool process_rx_free(void)
             err = enqueue_free(&state.rx_ring_drv, paddr, len, buffer);
             assert(!err);
             enqueued = true;
+            
+            /* If this is likely to be the last loop, set the flag */
+            if (!PRX_COND(state.rx_ring_clients[i].free_ring, state.rx_ring_drv.free_ring)) {
+                state.rx_ring_clients[i].free_ring->notify_reader = true;
+            }
         }
     }
 
@@ -218,17 +234,9 @@ bool process_rx_free(void)
        We also could have enqueued packets into the free ring during 
        process_rx_complete(), so we could have also missed this empty condition.
        */
-    if ((enqueued || dropped) && (state.rx_ring_drv.free_ring->notify_reader || was_empty)) {
+    if ((enqueued || dropped) && state.rx_ring_drv.free_ring->notify_reader) {
+        state.rx_ring_drv.free_ring->notify_reader = false;
         sel4cp_notify_delayed(DRIVER_CH);
-    }
-
-    for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (state.rx_ring_drv.free_ring->notify_reader) {
-            // ask the client to notify when done.
-            state.rx_ring_clients[client].free_ring->notify_reader = true;
-        } else {
-            state.rx_ring_clients[client].free_ring->notify_reader = false;
-        }
     }
 
     return enqueued;

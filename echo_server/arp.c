@@ -17,6 +17,8 @@
 #define NUM_BUFFERS 512
 #define SHARED_DMA_SIZE (BUF_SIZE * NUM_BUFFERS)
 
+#define _unused(x) ((void)(x))
+
 uintptr_t rx_free;
 uintptr_t rx_used;
 
@@ -160,7 +162,12 @@ void
 process_rx_complete(void)
 {
     uint32_t transmitted = 0;
+    /* If no work to be done, re-set the flag */
+    if (ring_empty(rx_ring.used_ring)) rx_ring.used_ring->notify_reader = true;
+
     while (!ring_empty(rx_ring.used_ring)) {
+        /* If work has been created, set flag to false to be reset later */
+        rx_ring.used_ring->notify_reader = false;
         int err;
         uintptr_t addr;
         unsigned int len;
@@ -196,6 +203,9 @@ process_rx_complete(void)
 
         err = enqueue_free(&rx_ring, addr, BUF_SIZE, cookie);
         assert(!err);
+
+        /* If this is likely to be the last loop, set the flag */
+        if (ring_empty(rx_ring.used_ring)) rx_ring.used_ring->notify_reader = true;
     }
 
     if (transmitted) {
@@ -277,6 +287,9 @@ init(void)
     /* Set up shared memory regions */
     ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, 0, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, 0, NUM_BUFFERS, NUM_BUFFERS);
+
+    rx_ring.used_ring->notify_reader = true;
+    tx_ring.free_ring->notify_reader = true;
 
     /* Set up hardcoded mac addresses */
     mac_addrs[0][0] = 0x52;
