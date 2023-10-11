@@ -21,12 +21,16 @@ uintptr_t uart_base;
 #define NUM_BUFFERS 512
 #define SHARED_DMA_SIZE (BUF_SIZE * NUM_BUFFERS)
 
+#define _unused(x) ((void)(x))
+
 ring_handle_t rx_ring_mux;
 ring_handle_t rx_ring_cli;
 
 void process_rx_complete(void)
 {
-    uint64_t enqueued = 0;
+    bool enqueued = false;
+    bool checked = false;
+    process_rx_complete_:
     // We only want to copy buffers if all the dequeues and enqueues will be successful
     while (!ring_empty(rx_ring_mux.used_ring) &&
             !ring_empty(rx_ring_cli.free_ring) &&
@@ -76,23 +80,26 @@ void process_rx_complete(void)
         err = enqueue_free(&rx_ring_mux, m_addr, BUF_SIZE, cookie);
         assert(!err);
 
-        enqueued += 1;
+        enqueued = true;
     }
 
-    if (!ring_empty(rx_ring_mux.used_ring)) {
-        // we want to be notified when this changes so we can continue
-        // enqueuing packets to the client.
+    THREAD_MEMORY_FENCE();
+
+    if (!checked) {
+        checked = true;
         rx_ring_cli.free_ring->notify_reader = true;
-    } else {
-        rx_ring_cli.free_ring->notify_reader = false;
+        rx_ring_mux.used_ring->notify_reader = true;
+        goto process_rx_complete_;
     }
 
     if (rx_ring_cli.used_ring->notify_reader && enqueued) {
+        rx_ring_cli.used_ring->notify_reader = false;
         sel4cp_notify(CLIENT_CH);
     }
 
     /* We want to inform the mux that more free buffers are available */
     if (enqueued && rx_ring_mux.free_ring->notify_reader) {
+        rx_ring_mux.free_ring->notify_reader = false;
         sel4cp_notify_delayed(MUX_RX_CH);
     }
 }

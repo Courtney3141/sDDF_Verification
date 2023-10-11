@@ -27,6 +27,8 @@
 #define TX_CH  3
 #define ARP    7
 
+#define _unused(x) ((void)(x))
+
 /* Memory regions. These all have to be here to keep compiler happy */
 uintptr_t rx_free;
 uintptr_t rx_used;
@@ -288,6 +290,8 @@ process_tx_queue(void)
     int err;
     struct pbuf *current = state.head;
     struct pbuf *temp;
+    bool checked = false;
+    process_tx_queue_:
     while(current != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
         uintptr_t buffer = alloc_tx_buffer(current->tot_len);
         if (buffer == (uintptr_t) NULL) {
@@ -335,17 +339,21 @@ process_tx_queue(void)
 
     // if curr != NULL, we need to make sure we don't lose it and can come back
     state.head = current;
-    if (!state.head) {
-        // no longer need a notification from the tx mux. 
-        cancel_free_ntfn(&state.tx_ring);
-    } else {
+
+    THREAD_MEMORY_FENCE();
+
+    if (!checked && !ring_empty(state.tx_ring.free_ring)) {
+        checked = true;
         request_free_ntfn(&state.tx_ring);
+        goto process_tx_queue_;
     }
 }
 
 void
 process_rx_queue(void)
 {
+    bool checked = false;
+    process_rx_queue_:
     while (!ring_empty(state.rx_ring.used_ring)) {
         uintptr_t addr;
         unsigned int len;
@@ -360,6 +368,14 @@ process_rx_queue(void)
             print("LWIP|ERROR: netif.input() != ERR_OK");
             pbuf_free(p);
         }
+    }
+
+    THREAD_MEMORY_FENCE();
+    
+    if (!checked) {
+        checked = true;
+        request_used_ntfn(&state.rx_ring);
+        goto process_rx_queue_;
     }
 }
 
@@ -498,6 +514,7 @@ void init(void)
 
     request_used_ntfn(&state.rx_ring);
     request_used_ntfn(&state.tx_ring);
+    request_free_ntfn(&state.tx_ring);
 
     if (notify_rx && state.rx_ring.free_ring->notify_reader) {
         notify_rx = false;
@@ -544,6 +561,7 @@ void notified(sel4cp_channel ch)
     }
     
     if (notify_rx && state.rx_ring.free_ring->notify_reader) {
+        state.rx_ring.free_ring->notify_reader = false;
         notify_rx = false;
         if (!have_signal) {
             sel4cp_notify_delayed(RX_CH);
@@ -553,6 +571,7 @@ void notified(sel4cp_channel ch)
     }
 
     if (notify_tx && state.tx_ring.used_ring->notify_reader) {
+        state.tx_ring.used_ring->notify_reader = false;
         notify_tx = false;
         if (!have_signal) {
             sel4cp_notify_delayed(TX_CH);

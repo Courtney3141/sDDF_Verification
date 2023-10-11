@@ -1,0 +1,894 @@
+co
+^Eco
+[Enter `^Ec?' for help]
+[up]
+
+U-Boot SPL 2023.07-rc2-00170-g62df7a3944-dirty (May 24 2023 - 09:45:15 +1000)
+No pmic
+SEC0:  RNG instantiated
+Trying to boot from MMC1
+NOTICE:  Do not release JR0 to NS as it can be used by HAB
+NOTICE:  BL31: v2.9(release):v2.9.0
+NOTICE:  BL31: Built : 09:09:03, May 24 2023
+
+
+U-Boot 2023.07-rc2-00170-g62df7a3944-dirty (May 24 2023 - 09:45:15 +1000)
+
+CPU:   Freescale i.MX8MMQ rev1.0 at 1200 MHz
+Reset cause: POR
+Model: FSL i.MX8MM EVK board
+DRAM:  2 GiB
+Core:  87 devices, 22 uclasses, devicetree: separate
+MMC:   FSL_SDHC: 1, FSL_SDHC: 2
+Loading Environment from MMC... OK
+In:    serial@30890000
+Out:   serial@30890000
+Err:   serial@30890000
+SEC0:  RNG instantiated
+Net:   eth0: ethernet@30be0000
+u-boot=> setenv autoload no
+setenv autoload no
+u-boot=> sleep 5; echo woof
+sleep 5; echo woof
+woof
+u-boot=> dhcp
+dhcp
+BOOTP broadcast 1
+DHCP client bound to address 172.16.0.10 (6 ms)
+u-boot=> tftp ${loadaddr} /imx8mm/local-kernel
+tftp ${loadaddr} /imx8mm/local-kernel
+Using ethernet@30be0000 device
+TFTP from server 172.16.0.2; our IP address is 172.16.0.10
+Filename '/imx8mm/local-kernel'.
+Load address: 0x41000000
+Loading: *#################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################################
+	 #################################################
+	 8.3 MiB/s
+done
+Bytes transferred = 4522592 (450260 hex)
+u-boot=> go ${loadaddr}
+go ${loadaddr}
+## Starting application at 0x41000000 ...
+LDR|INFO: altloader for seL4 starting
+LDR|INFO: Flags:                0x0000000000000000
+LDR|INFO: Kernel:      entry:   0xffffff8040000000
+LDR|INFO: Root server: physmem: 0x0000000040450000 -- 0x0000000040457000
+LDR|INFO:              virtmem: 0x000000008a000000 -- 0x000000008a007000
+LDR|INFO:              entry  : 0x000000008a000000
+LDR|INFO: region: 0x00000000   addr: 0x0000000040000000   size: 0x000000000022e000   offset: 0x0000000000000000   type: 0x0000000000000001
+LDR|INFO: region: 0x00000001   addr: 0x0000000040450000   size: 0x00000000000068d0   offset: 0x000000000022e000   type: 0x0000000000000001
+LDR|INFO: region: 0x00000002   addr: 0x000000004022e000   size: 0x0000000000011e38   offset: 0x00000000002348d0   type: 0x0000000000000001
+LDR|INFO: region: 0x00000003   addr: 0x0000000040240000   size: 0x0000000000000320   offset: 0x0000000000246710   type: 0x0000000000000001
+LDR|INFO: region: 0x00000004   addr: 0x0000000040241000   size: 0x0000000000001050   offset: 0x0000000000246a30   type: 0x0000000000000001
+LDR|INFO: region: 0x00000005   addr: 0x0000000040243000   size: 0x00000000000017e0   offset: 0x0000000000247a80   type: 0x0000000000000001
+LDR|INFO: region: 0x00000006   addr: 0x0000000040245000   size: 0x0000000000001100   offset: 0x0000000000249260   type: 0x0000000000000001
+LDR|INFO: region: 0x00000007   addr: 0x0000000040247000   size: 0x0000000000000df8   offset: 0x000000000024a360   type: 0x0000000000000001
+LDR|INFO: region: 0x00000008   addr: 0x0000000040248000   size: 0x0000000000001100   offset: 0x000000000024b160   type: 0x0000000000000001
+LDR|INFO: region: 0x00000009   addr: 0x000000004024a000   size: 0x0000000000001220   offset: 0x000000000024c260   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000a   addr: 0x000000004024c000   size: 0x0000000000001100   offset: 0x000000000024d480   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000b   addr: 0x000000004024e000   size: 0x00000000000011ae   offset: 0x000000000024e580   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000c   addr: 0x0000000040250000   size: 0x00000000000010a0   offset: 0x000000000024f730   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000d   addr: 0x0000000040252000   size: 0x00000000000011ae   offset: 0x00000000002507d0   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000e   addr: 0x0000000040254000   size: 0x00000000000010a0   offset: 0x0000000000251980   type: 0x0000000000000001
+LDR|INFO: region: 0x0000000f   addr: 0x0000000040256000   size: 0x0000000000000933   offset: 0x0000000000252a20   type: 0x0000000000000001
+LDR|INFO: region: 0x00000010   addr: 0x0000000040257000   size: 0x0000000000001100   offset: 0x0000000000253360   type: 0x0000000000000001
+LDR|INFO: region: 0x00000011   addr: 0x0000000040259000   size: 0x000000000001e098   offset: 0x0000000000254460   type: 0x0000000000000001
+LDR|INFO: region: 0x00000012   addr: 0x0000000040278000   size: 0x00000000000d8780   offset: 0x0000000000272500   type: 0x0000000000000001
+LDR|INFO: region: 0x00000013   addr: 0x0000000040351000   size: 0x000000000001e098   offset: 0x000000000034ac80   type: 0x0000000000000001
+LDR|INFO: region: 0x00000014   addr: 0x0000000040370000   size: 0x00000000000d8780   offset: 0x0000000000368d20   type: 0x0000000000000001
+LDR|INFO: region: 0x00000015   addr: 0x0000000040449000   size: 0x0000000000001e28   offset: 0x00000000004414a0   type: 0x0000000000000001
+LDR|INFO: region: 0x00000016   addr: 0x000000004044b000   size: 0x00000000000010b0   offset: 0x00000000004432d0   type: 0x0000000000000001
+LDR|INFO: region: 0x00000017   addr: 0x000000004044d000   size: 0x00000000000009d0   offset: 0x0000000000444380   type: 0x0000000000000001
+LDR|INFO: region: 0x00000018   addr: 0x000000004044e000   size: 0x00000000000010a0   offset: 0x0000000000444d50   type: 0x0000000000000001
+LDR|INFO: copying region 0x00000000
+LDR|INFO: copying region 0x00000001
+LDR|INFO: copying region 0x00000002
+LDR|INFO: copying region 0x00000003
+LDR|INFO: copying region 0x00000004
+LDR|INFO: copying region 0x00000005
+LDR|INFO: copying region 0x00000006
+LDR|INFO: copying region 0x00000007
+LDR|INFO: copying region 0x00000008
+LDR|INFO: copying region 0x00000009
+LDR|INFO: copying region 0x0000000a
+LDR|INFO: copying region 0x0000000b
+LDR|INFO: copying region 0x0000000c
+LDR|INFO: copying region 0x0000000d
+LDR|INFO: copying region 0x0000000e
+LDR|INFO: copying region 0x0000000f
+LDR|INFO: copying region 0x00000010
+LDR|INFO: copying region 0x00000011
+LDR|INFO: copying region 0x00000012
+LDR|INFO: copying region 0x00000013
+LDR|INFO: copying region 0x00000014
+LDR|INFO: copying region 0x00000015
+LDR|INFO: copying region 0x00000016
+LDR|INFO: copying region 0x00000017
+LDR|INFO: copying region 0x00000018
+LDR|INFO: CurrentEL=EL2
+LDR|INFO: Resetting CNTVOFF
+LDR|INFO: Dropping from EL2 to EL1
+LDR|INFO: CurrentEL=EL1
+LDR|INFO: Dropped to EL1 successfully
+LDR|INFO: enabling MMU
+LDR|INFO: jumping to kernel
+eth:cl eient0:lf elf PD init P cD omplete
+inclitient1: f elf PD initun cctomplete
+ion running
+Client registering ip address: 172.16.1.34 with MAC: 52:54:01:00:00:00 client: 0
+DHCP request finished, IP address for netif e0 is: 172.16.1.34
+Client registering ip address: 172.16.1.35 with MAC: 52:54:01:00:00:01 client: 1
+DHCP request finished, IP address for netif e0 is: 172.16.1.35
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x0000000002085297
+L1 d-cache misses: 0x00000000063b87b1
+L1 i-tlb misses: 0x00000000001dad74
+L1 d-tlb misses: 0x00000000001bff01
+Instructions: 0x00000000c56ad8be
+Branch mispredictions: 0x00000000022dc42f
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a8c42e01
+KernelEntries: 0x00000000003d2370
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x000000051b0c329d
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x0000000027d0fb8f
+KernelEntries: 0x00000000000f752c
+NumberSchedules: 0x00000000000846de
+TotalUtilisation: 0x00000000e076c371
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000006bcf544c
+KernelEntries: 0x000000000025565f
+NumberSchedules: 0x000000000008a179
+TotalUtilisation: 0x00000000b5b2be43
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x00000000086cfd25
+KernelEntries: 0x000000000002850b
+NumberSchedules: 0x00000000000283f5
+TotalUtilisation: 0x00000000233ea116
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x00000000076ba69e
+KernelEntries: 0x0000000000043e66
+NumberSchedules: 0x0000000000038267
+TotalUtilisation: 0x00000000d7ccacf5
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x0000000001a0b17c
+KernelEntries: 0x000000000000c221
+NumberSchedules: 0x000000000000c1bc
+TotalUtilisation: 0x00000001a7912a82
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x000000000007ec40
+KernelEntries: 0x000000000000030a
+NumberSchedules: 0x000000000000030a
+TotalUtilisation: 0x000000000017d5b4
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000001b89
+KernelEntries: 0x000000000000000d
+NumberSchedules: 0x000000000000000d
+TotalUtilisation: 0x0000000000006051
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x00000000001fa274
+KernelEntries: 0x000000000000090c
+NumberSchedules: 0x0000000000000743
+TotalUtilisation: 0x0000000000629523
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x000000000582a576
+L1 d-cache misses: 0x000000000476c7f7
+L1 i-tlb misses: 0x000000000040b9c1
+L1 d-tlb misses: 0x00000000004217d5
+Instructions: 0x0000000021f4c29a
+Branch mispredictions: 0x000000000237f058
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a734681d
+KernelEntries: 0x00000000004638d8
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x00000009cfda1b64
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x0000000030dd53c6
+KernelEntries: 0x0000000000145638
+NumberSchedules: 0x00000000000b7e74
+TotalUtilisation: 0x000000008f6a0b21
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x0000000038b37a06
+KernelEntries: 0x0000000000163d74
+NumberSchedules: 0x00000000000ae03b
+TotalUtilisation: 0x000000007191d84a
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x0000000014f85570
+KernelEntries: 0x000000000006b330
+NumberSchedules: 0x000000000006b260
+TotalUtilisation: 0x0000000031bf0843
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000d219038
+KernelEntries: 0x000000000009b025
+NumberSchedules: 0x00000000000594d3
+TotalUtilisation: 0x0000000045b02b0a
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x000000000948eb4f
+KernelEntries: 0x000000000004f47f
+NumberSchedules: 0x000000000004f47a
+TotalUtilisation: 0x000000007b3c523e
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x00000000000047d1
+KernelEntries: 0x000000000000001b
+NumberSchedules: 0x000000000000001b
+TotalUtilisation: 0x0000000000010096
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x00000000050fa728
+L1 d-cache misses: 0x0000000004df5317
+L1 i-tlb misses: 0x00000000003ae89b
+L1 d-tlb misses: 0x00000000003a4d44
+Instructions: 0x00000000dcfe2d37
+Branch mispredictions: 0x0000000002637486
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a9fc6d15
+KernelEntries: 0x000000000047ed7b
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x00000007359befd5
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002ef72b5f
+KernelEntries: 0x0000000000141a85
+NumberSchedules: 0x00000000000a7019
+TotalUtilisation: 0x00000000972c9f3b
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000004728e7e6
+KernelEntries: 0x00000000001c3270
+NumberSchedules: 0x00000000000ccd35
+TotalUtilisation: 0x000000008634e065
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x000000000fa87f76
+KernelEntries: 0x000000000004e7af
+NumberSchedules: 0x000000000004e737
+TotalUtilisation: 0x0000000027bfb241
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000e75d1ea
+KernelEntries: 0x000000000009a55c
+NumberSchedules: 0x000000000006ae84
+TotalUtilisation: 0x00000000587181fc
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000097c0ece
+KernelEntries: 0x000000000004fd47
+NumberSchedules: 0x000000000004fd38
+TotalUtilisation: 0x000000009e6a9ea1
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000003749
+KernelEntries: 0x0000000000000011
+NumberSchedules: 0x0000000000000011
+TotalUtilisation: 0x000000000000bfd4
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x0000000004de62e2
+L1 d-cache misses: 0x00000000055ec36a
+L1 i-tlb misses: 0x000000000039f36a
+L1 d-tlb misses: 0x0000000000381797
+Instructions: 0x000000009746a07f
+Branch mispredictions: 0x00000000028a98be
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000b288fbc7
+KernelEntries: 0x00000000004b4d20
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000653d38052
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x0000000030109c7f
+KernelEntries: 0x000000000014cd2d
+NumberSchedules: 0x00000000000a9120
+TotalUtilisation: 0x00000000a54fd6b2
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000005276d383
+KernelEntries: 0x0000000000206756
+NumberSchedules: 0x00000000000df10e
+TotalUtilisation: 0x0000000096af9b9a
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x000000000d5e24db
+KernelEntries: 0x0000000000042b99
+NumberSchedules: 0x0000000000042b0a
+TotalUtilisation: 0x000000002449eaf1
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000f2a90a9
+KernelEntries: 0x0000000000099f6a
+NumberSchedules: 0x0000000000074821
+TotalUtilisation: 0x000000006ad2067d
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x0000000009e43ff4
+KernelEntries: 0x0000000000052e47
+NumberSchedules: 0x0000000000052e0a
+TotalUtilisation: 0x00000000c3332612
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x000000000000339b
+KernelEntries: 0x0000000000000010
+NumberSchedules: 0x0000000000000010
+TotalUtilisation: 0x000000000000ad3e
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x00000000043cc205
+L1 d-cache misses: 0x0000000005a0f00c
+L1 i-tlb misses: 0x000000000035a35e
+L1 d-tlb misses: 0x0000000000322351
+Instructions: 0x00000000e13d4e69
+Branch mispredictions: 0x00000000028c1467
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000b343005c
+KernelEntries: 0x00000000004b6e07
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x00000005de53094f
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002fd32490
+KernelEntries: 0x00000000001534f9
+NumberSchedules: 0x00000000000a3294
+TotalUtilisation: 0x00000000b0ee8081
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000005a3f686c
+KernelEntries: 0x0000000000231637
+NumberSchedules: 0x00000000000e6030
+TotalUtilisation: 0x000000009fd0ac44
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x000000000a631316
+KernelEntries: 0x0000000000033ac6
+NumberSchedules: 0x0000000000033a4f
+TotalUtilisation: 0x000000001f52db06
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000f3f6054
+KernelEntries: 0x0000000000091232
+NumberSchedules: 0x000000000007ad9e
+TotalUtilisation: 0x000000007bcf9e91
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x0000000009ad043b
+KernelEntries: 0x0000000000050843
+NumberSchedules: 0x00000000000507a1
+TotalUtilisation: 0x00000000e3c41788
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000002dca
+KernelEntries: 0x000000000000000e
+NumberSchedules: 0x000000000000000e
+TotalUtilisation: 0x000000000000a14f
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x0000000003e322df
+L1 d-cache misses: 0x0000000005dc99b7
+L1 i-tlb misses: 0x0000000000323d05
+L1 d-tlb misses: 0x00000000002dc1a5
+Instructions: 0x000000005b7f68fd
+Branch mispredictions: 0x000000000281d8c5
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000b3d16f86
+KernelEntries: 0x00000000004a3668
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x000000059d665918
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002edc73b5
+KernelEntries: 0x000000000014b109
+NumberSchedules: 0x000000000009dbfd
+TotalUtilisation: 0x00000000bab531d5
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000005ff0ef6c
+KernelEntries: 0x0000000000246067
+NumberSchedules: 0x00000000000de4d4
+TotalUtilisation: 0x00000000a7260ea8
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x0000000008bdab31
+KernelEntries: 0x000000000002acf8
+NumberSchedules: 0x000000000002ac75
+TotalUtilisation: 0x000000001d90f9bc
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000ebc4990
+KernelEntries: 0x0000000000087680
+NumberSchedules: 0x0000000000078424
+TotalUtilisation: 0x000000008d0903b5
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x0000000009612409
+KernelEntries: 0x000000000004d14c
+NumberSchedules: 0x000000000004ced9
+TotalUtilisation: 0x0000000108bed48e
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x000000000003440b
+KernelEntries: 0x0000000000000161
+NumberSchedules: 0x000000000000015f
+TotalUtilisation: 0x00000000000a6880
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x00000000000033a8
+KernelEntries: 0x000000000000000e
+NumberSchedules: 0x000000000000000e
+TotalUtilisation: 0x000000000000ba3c
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x00000000000c1b6d
+KernelEntries: 0x00000000000003d8
+NumberSchedules: 0x000000000000030b
+TotalUtilisation: 0x000000000025d478
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x00000000032d23c9
+L1 d-cache misses: 0x0000000006075c79
+L1 i-tlb misses: 0x00000000002e8043
+L1 d-tlb misses: 0x0000000000295777
+Instructions: 0x00000000ebbe126f
+Branch mispredictions: 0x00000000025e1b8d
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000b08d05b5
+KernelEntries: 0x0000000000478258
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000569829719
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002f0d8396
+KernelEntries: 0x000000000014ede7
+NumberSchedules: 0x000000000009ba35
+TotalUtilisation: 0x00000000c803c0e5
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000006113823a
+KernelEntries: 0x000000000023a16a
+NumberSchedules: 0x00000000000cbef5
+TotalUtilisation: 0x00000000a616d0ba
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x00000000079508a9
+KernelEntries: 0x0000000000025a24
+NumberSchedules: 0x00000000000259db
+TotalUtilisation: 0x000000001d0700e8
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000f015d01
+KernelEntries: 0x0000000000087299
+NumberSchedules: 0x000000000007c224
+TotalUtilisation: 0x000000009fdcc3cd
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x000000000674cb12
+KernelEntries: 0x0000000000034ad4
+NumberSchedules: 0x00000000000349a3
+TotalUtilisation: 0x00000001269c53a7
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x000000000007d58d
+KernelEntries: 0x000000000000033d
+NumberSchedules: 0x000000000000033d
+TotalUtilisation: 0x0000000000186477
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000002aa9
+KernelEntries: 0x000000000000000f
+NumberSchedules: 0x000000000000000f
+TotalUtilisation: 0x00000000000091f2
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x000000000020fe25
+KernelEntries: 0x0000000000000955
+NumberSchedules: 0x000000000000076e
+TotalUtilisation: 0x0000000000627598
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x0000000002884a5f
+L1 d-cache misses: 0x0000000006221336
+L1 i-tlb misses: 0x000000000029aac4
+L1 d-tlb misses: 0x00000000002541b4
+Instructions: 0x0000000092754836
+Branch mispredictions: 0x0000000002348f23
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000adddd6be
+KernelEntries: 0x000000000043804b
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x000000055511bd9d
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002f0f067e
+KernelEntries: 0x0000000000145a31
+NumberSchedules: 0x0000000000099d2c
+TotalUtilisation: 0x00000000d4fb8490
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x0000000061e121a7
+KernelEntries: 0x00000000002265c2
+NumberSchedules: 0x00000000000b1048
+TotalUtilisation: 0x00000000a7030099
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x0000000007db447a
+KernelEntries: 0x000000000002639d
+NumberSchedules: 0x0000000000026398
+TotalUtilisation: 0x000000001efe77b5
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000e28793d
+KernelEntries: 0x000000000007e138
+NumberSchedules: 0x0000000000072fe9
+TotalUtilisation: 0x00000000b2b5f0c1
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000034627f3
+KernelEntries: 0x000000000001a4b2
+NumberSchedules: 0x000000000001a450
+TotalUtilisation: 0x00000001493647f6
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000083c9d
+KernelEntries: 0x000000000000032c
+NumberSchedules: 0x000000000000032c
+TotalUtilisation: 0x000000000018cb7d
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000002190
+KernelEntries: 0x000000000000000f
+NumberSchedules: 0x000000000000000f
+TotalUtilisation: 0x0000000000007052
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x0000000000220dfc
+KernelEntries: 0x0000000000000916
+NumberSchedules: 0x000000000000073a
+TotalUtilisation: 0x0000000000642e82
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x00000000023927f0
+L1 d-cache misses: 0x0000000006324bc4
+L1 i-tlb misses: 0x0000000000249ee7
+L1 d-tlb misses: 0x000000000021433f
+Instructions: 0x000000003d08f8c0
+Branch mispredictions: 0x000000000221bf74
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a9aae19d
+KernelEntries: 0x0000000000404f21
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x00000005392d7c07
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x000000002c0f7830
+KernelEntries: 0x000000000012a3ec
+NumberSchedules: 0x000000000008f364
+TotalUtilisation: 0x00000000d89a7b32
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x0000000063cc60ba
+KernelEntries: 0x000000000022ac99
+NumberSchedules: 0x000000000009a3a9
+TotalUtilisation: 0x00000000aa683ce0
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x00000000082de883
+KernelEntries: 0x00000000000279b5
+NumberSchedules: 0x000000000002799a
+TotalUtilisation: 0x00000000211addd7
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x000000000bf71120
+KernelEntries: 0x000000000006b98f
+NumberSchedules: 0x0000000000060481
+TotalUtilisation: 0x00000000c23dacd2
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000b89
+KernelEntries: 0x0000000000000004
+NumberSchedules: 0x0000000000000002
+TotalUtilisation: 0x0000000000002315
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x0000000002012180
+KernelEntries: 0x000000000000f714
+NumberSchedules: 0x000000000000f691
+TotalUtilisation: 0x000000016d1a6258
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000078059
+KernelEntries: 0x000000000000031c
+NumberSchedules: 0x000000000000031a
+TotalUtilisation: 0x000000000017a2f8
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000004147
+KernelEntries: 0x0000000000000014
+NumberSchedules: 0x0000000000000014
+TotalUtilisation: 0x000000000000dcf0
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x000000000020f3b0
+KernelEntries: 0x00000000000008f5
+NumberSchedules: 0x0000000000000722
+TotalUtilisation: 0x00000000006393f2
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x0000000002144b3c
+L1 d-cache misses: 0x0000000006414216
+L1 i-tlb misses: 0x00000000001fe6d9
+L1 d-tlb misses: 0x00000000001d5391
+Instructions: 0x00000000ebe94003
+Branch mispredictions: 0x000000000226e3b7
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a778341a
+KernelEntries: 0x00000000003dcaa5
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000523526a9d
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x0000000028c5fe6f
+KernelEntries: 0x0000000000108335
+NumberSchedules: 0x00000000000859de
+TotalUtilisation: 0x00000000dc3fec20
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x00000000684185a0
+KernelEntries: 0x0000000000241666
+NumberSchedules: 0x000000000008d28e
+TotalUtilisation: 0x00000000b122415e
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x0000000008042472
+KernelEntries: 0x00000000000266a3
+NumberSchedules: 0x0000000000026634
+TotalUtilisation: 0x000000002246f62d
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x00000000092f69a6
+KernelEntries: 0x00000000000537d3
+NumberSchedules: 0x0000000000047f88
+TotalUtilisation: 0x00000000d1b448a2
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000019de5b2
+KernelEntries: 0x000000000000c160
+NumberSchedules: 0x000000000000c0ed
+TotalUtilisation: 0x00000001930f16a7
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000079cd0
+KernelEntries: 0x000000000000030f
+NumberSchedules: 0x000000000000030f
+TotalUtilisation: 0x000000000017a6c0
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x0000000000003b6e
+KernelEntries: 0x0000000000000014
+NumberSchedules: 0x0000000000000014
+TotalUtilisation: 0x000000000000bf4e
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x00000000001f41b2
+KernelEntries: 0x00000000000008c7
+NumberSchedules: 0x00000000000006fa
+TotalUtilisation: 0x0000000000601f7d
+}
+Utilization connection established!
+client0 measurement starting... 
+client0 measurement finished 
+{
+L1 i-cache misses: 0x00000000020ccb36
+L1 d-cache misses: 0x0000000006456802
+L1 i-tlb misses: 0x00000000001d97d7
+L1 d-tlb misses: 0x00000000001be797
+Instructions: 0x00000000bcb347a5
+Branch mispredictions: 0x000000000228d51b
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000a89e4e74
+KernelEntries: 0x00000000003cfb53
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x000000051af04ae1
+}
+Utilisation details for PD: ETH DRIVER (0x0000000000000001)
+KernelUtilisation: 0x00000000279be256
+KernelEntries: 0x00000000000f63dd
+NumberSchedules: 0x0000000000084436
+TotalUtilisation: 0x00000000e0d4d551
+}
+Utilisation details for PD: MUX RX (0x0000000000000002)
+KernelUtilisation: 0x000000006be846ee
+KernelEntries: 0x0000000000254850
+NumberSchedules: 0x00000000000898f9
+TotalUtilisation: 0x00000000b67409ce
+}
+Utilisation details for PD: MUX TX (0x0000000000000003)
+KernelUtilisation: 0x00000000087819f6
+KernelEntries: 0x000000000002893c
+NumberSchedules: 0x0000000000028813
+TotalUtilisation: 0x0000000023c2a16f
+}
+Utilisation details for PD: COPIER0 (0x0000000000000004)
+KernelUtilisation: 0x00000000075d20de
+KernelEntries: 0x0000000000043461
+NumberSchedules: 0x0000000000037874
+TotalUtilisation: 0x00000000db96819e
+}
+Utilisation details for PD: COPIER1 (0x0000000000000005)
+KernelUtilisation: 0x0000000000000000
+KernelEntries: 0x0000000000000000
+NumberSchedules: 0x0000000000000000
+TotalUtilisation: 0x0000000000000000
+}
+Utilisation details for PD: LWIP CLIENT0 (0x0000000000000006)
+KernelUtilisation: 0x00000000019e752a
+KernelEntries: 0x000000000000c10f
+NumberSchedules: 0x000000000000c093
+TotalUtilisation: 0x00000001aa8d2a17
+}
+Utilisation details for PD: LWIP CLIENT1 (0x0000000000000007)
+KernelUtilisation: 0x0000000000079720
+KernelEntries: 0x000000000000030d
+NumberSchedules: 0x000000000000030d
+TotalUtilisation: 0x0000000000170b1b
+}
+Utilisation details for PD: ARP (0x0000000000000008)
+KernelUtilisation: 0x00000000000034de
+KernelEntries: 0x0000000000000015
+NumberSchedules: 0x0000000000000015
+TotalUtilisation: 0x000000000000b521
+}
+Utilisation details for PD: TIMER (0x0000000000000009)
+KernelUtilisation: 0x00000000001ef161
+KernelEntries: 0x0000000000000942
+NumberSchedules: 0x0000000000000777
+TotalUtilisation: 0x00000000006134d8
+}
