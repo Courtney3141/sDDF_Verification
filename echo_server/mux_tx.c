@@ -27,6 +27,8 @@ uintptr_t uart_base;
 #define BUF_SIZE 2048
 #define DMA_SIZE 0x200000
 
+#define _unused(x) ((void)(x))
+
 typedef struct state {
     /* Pointers to shared buffers */
     ring_handle_t tx_ring_drv;
@@ -99,9 +101,10 @@ get_client(uintptr_t addr)
  */
 void process_tx_ready(void)
 {
-    uint64_t enqueued = 0;
+    bool enqueued = 0;
     int err;
-
+    _unused(err);
+    process_tx_ready_:
     for (int client = 0; client < NUM_CLIENTS; client++) {
         while (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
             uintptr_t addr;
@@ -110,18 +113,27 @@ void process_tx_ready(void)
             uintptr_t phys;
 
             err = dequeue_used(&state.tx_ring_clients[client], &addr, &len, &cookie);
-            _unused(err);
             assert(!err);
             phys = get_phys_addr(addr);
             assert(phys);
             err = enqueue_used(&state.tx_ring_drv, phys, len, cookie);
             assert(!err);
 
-            enqueued += 1;
+            enqueued = true;
+        }
+
+        state.tx_ring_clients[client].used_ring->notify_reader = true;
+
+        THREAD_MEMORY_FENCE();
+
+        if (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
+            state.tx_ring_clients[client].used_ring->notify_reader = false;
+            goto process_tx_ready_;
         }
     }
 
     if (state.tx_ring_drv.used_ring->notify_reader && enqueued) {
+        state.tx_ring_drv.used_ring->notify_reader = false;
         sel4cp_notify_delayed(DRIVER);
     }
 }
@@ -130,12 +142,13 @@ void process_tx_ready(void)
  * Take as many TX free buffers from the driver and give them to
  * the respective clients. This will notify the clients if we have moved buffers
  * around and the client's TX free ring was empty.
+ * !!! We assume a client never has a free queue greater than a used queue. 
  */
 void process_tx_complete(void)
 {
     // bitmap stores whether which clients need notifying.
     bool notify_clients[NUM_CLIENTS] = {false};
-
+    process_tx_complete_:
     while (!ring_empty(state.tx_ring_drv.free_ring)) {
         uintptr_t addr;
         unsigned int len;
@@ -155,9 +168,19 @@ void process_tx_complete(void)
         }
     }
 
+    state.tx_ring_drv.free_ring->notify_reader = true;
+
+    THREAD_MEMORY_FENCE();
+
+    if (!ring_empty(state.tx_ring_drv.free_ring)) {
+        state.tx_ring_drv.free_ring->notify_reader = false;
+        goto process_tx_complete_;
+    };
+
     /* Loop over bitmap and see who we need to notify. */
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client]) {
+            state.tx_ring_clients[client].free_ring->notify_reader = false;
             sel4cp_notify(client);
         }
     }
@@ -167,27 +190,11 @@ void notified(sel4cp_channel ch)
 {
     process_tx_complete();
     process_tx_ready();
-
-    // We only want to get a notification from the driver regarding 
-    // new free tx buffers, if any
-    // of the clients need a notification. 
-    bool found = false;
-    for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (state.tx_ring_clients[client].free_ring->notify_reader) {
-            state.tx_ring_drv.free_ring->notify_reader = true;
-            found = true;
-        }
-    }
-    
-    if (!found) {
-        state.tx_ring_drv.free_ring->notify_reader = false;
-    }
 }
 
 void init(void)
 {
     /* Set up shared memory regions */
-    // FIX ME: Use the notify function pointer to put the notification in?
     ring_init(&state.tx_ring_drv, (ring_buffer_t *)tx_free_drv, (ring_buffer_t *)tx_used_drv, 1, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.tx_ring_clients[0], (ring_buffer_t *)tx_free_cli0, (ring_buffer_t *)tx_used_cli0, 1, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.tx_ring_clients[1], (ring_buffer_t *)tx_free_cli1, (ring_buffer_t *)tx_used_cli1, 1, NUM_BUFFERS, NUM_BUFFERS);

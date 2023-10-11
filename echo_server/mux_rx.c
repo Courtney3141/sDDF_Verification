@@ -31,6 +31,8 @@ uintptr_t uart_base;
 #define BUF_SIZE 2048
 #define NUM_BUFFERS 512
 
+#define _unused(x) ((void)(x))
+
 typedef struct state {
     /* Pointers to shared buffers */
     ring_handle_t rx_ring_drv;
@@ -119,7 +121,7 @@ void process_rx_complete(void)
         determine whether we need to notify the driver in 
         process_rx_free() as we dropped some packets */
     dropped = 0;
-
+    process_rx_complete_:
     while (!ring_empty(state.rx_ring_drv.used_ring)) {
         uintptr_t addr = 0;
         unsigned int len = 0;
@@ -164,19 +166,23 @@ void process_rx_complete(void)
         }
     }
 
+    state.rx_ring_drv.used_ring->notify_reader = true;
+
+    THREAD_MEMORY_FENCE();
+
+    if (!ring_empty(state.rx_ring_drv.used_ring)) {
+        state.rx_ring_drv.used_ring->notify_reader = false;
+        goto process_rx_complete_;
+    }
+
+
     /* Loop over bitmap and see who we need to notify. */
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client]) {
+            state.rx_ring_clients[client].used_ring->notify_reader = false;
             sel4cp_notify(client);
         }
-
-        if (state.rx_ring_drv.free_ring->notify_reader) {
-            // ask the client to notify when done.
-            state.rx_ring_clients[client].free_ring->notify_reader = true;
-        } else {
-            state.rx_ring_clients[client].free_ring->notify_reader = false;
-        }
-    }
+    }    
 }
 
 // Loop over all client rings and return unused rx buffers to the driver
@@ -187,8 +193,8 @@ bool process_rx_free(void)
      * notify it only once.
      */
     bool enqueued = false;
-    bool was_empty = ring_empty(state.rx_ring_drv.free_ring);
     for (int i = 0; i < NUM_CLIENTS; i++) {
+        process_rx_free_:
         while (!ring_empty(state.rx_ring_clients[i].free_ring) && !ring_full(state.rx_ring_drv.free_ring)) {
             uintptr_t addr = 0;
             unsigned int len = 0;
@@ -208,6 +214,15 @@ bool process_rx_free(void)
             assert(!err);
             enqueued = true;
         }
+
+        state.rx_ring_clients[i].free_ring->notify_reader = true;
+
+        THREAD_MEMORY_FENCE();
+
+        if (!ring_empty(state.rx_ring_clients[i].free_ring) && !ring_full(state.rx_ring_drv.free_ring)) {
+            state.rx_ring_clients[i].free_ring->notify_reader = false;
+            goto process_rx_free_;
+        }
     }
 
     /* We only want to notify the driver if the queue either was empty, or
@@ -218,17 +233,9 @@ bool process_rx_free(void)
        We also could have enqueued packets into the free ring during 
        process_rx_complete(), so we could have also missed this empty condition.
        */
-    if ((enqueued || dropped) && (state.rx_ring_drv.free_ring->notify_reader || was_empty)) {
+    if ((enqueued || dropped) && state.rx_ring_drv.free_ring->notify_reader) {
+        state.rx_ring_drv.free_ring->notify_reader = false;
         sel4cp_notify_delayed(DRIVER_CH);
-    }
-
-    for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (state.rx_ring_drv.free_ring->notify_reader) {
-            // ask the client to notify when done.
-            state.rx_ring_clients[client].free_ring->notify_reader = true;
-        } else {
-            state.rx_ring_clients[client].free_ring->notify_reader = false;
-        }
     }
 
     return enqueued;

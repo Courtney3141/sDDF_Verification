@@ -19,6 +19,8 @@
 
 #define MDC_FREQ    20000000UL
 
+#define _unused(x) ((void)(x))
+
 /* Memory regions. These all have to be here to keep compiler happy */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -131,6 +133,7 @@ static void
 fill_rx_bufs(void)
 {
     ring_ctx_t *ring = &rx;
+    fill_rx_bufs_:
     while (!hw_ring_full(ring)) {
         /* request a buffer */
         void *cookie = NULL;
@@ -152,18 +155,27 @@ fill_rx_bufs(void)
         ring->write = new_write;
     }
 
+    /* Only get notified if more rx bufs are available if hw ring not full */
+    if (!hw_ring_full(ring)) {
+        rx_ring.free_ring->notify_reader = true;
+    } else {
+        rx_ring.free_ring->notify_reader = false;
+    }
+
+    THREAD_MEMORY_FENCE();
+
+    if (!ring_empty(rx_ring.free_ring) && !hw_ring_full(ring)) {
+        rx_ring.free_ring->notify_reader = false;
+        goto fill_rx_bufs_;
+    }
+
     if (!(hw_ring_empty(ring))) {
-        /* Make sure rx is enabled */
+        /* Make sure rx is enabled*/
         eth->rdar = RDAR_RDAR;
         if (!(irq_mask & NETIRQ_RXF))
             enable_irqs(eth, IRQ_MASK);
-        __sync_synchronize();
-        rx_ring.free_ring->notify_reader = false;
     } else {
-        rx_ring.free_ring->notify_reader = true;
-        __sync_synchronize();
         enable_irqs(eth, NETIRQ_TXF | NETIRQ_EBERR);
-        sel4cp_notify(RX_CH);
     }
 }
 
@@ -171,7 +183,7 @@ static void
 handle_rx(volatile struct enet_regs *eth)
 {
     ring_ctx_t *ring = &rx;
-    int num = 0;
+    bool packets_transferred = false;
     unsigned int read = ring->read;
 
     if (ring_full(rx_ring.used_ring))
@@ -216,7 +228,7 @@ handle_rx(volatile struct enet_regs *eth)
             print("ETH|ERROR: Failed to enqueue to RX used ring\n");
         }
         assert(!err);
-        num++;
+        packets_transferred = true;
     }
 
     /* Notify client (only if we have actually processed a packet
@@ -224,7 +236,8 @@ handle_rx(volatile struct enet_regs *eth)
      * Driver runs at highest priority, so buffers will be refilled
      * by caller before the notify causes a context switch.
      */
-    if (num && rx_ring.used_ring->notify_reader) {
+    if (packets_transferred && rx_ring.used_ring->notify_reader) {
+        rx_ring.used_ring->notify_reader = false;
         sel4cp_notify(RX_CH);
     }
 }
@@ -264,8 +277,18 @@ handle_tx(volatile struct enet_regs *eth)
     unsigned int len = 0;
     void *cookie = NULL;
 
+    handle_tx_:
     while (!(hw_ring_full(&tx)) && !driver_dequeue(tx_ring.used_ring, &buffer, &len, &cookie)) {
         raw_tx(eth, buffer, len, cookie);
+    }
+
+    tx_ring.used_ring->notify_reader = true;
+
+    THREAD_MEMORY_FENCE();
+
+    if (!hw_ring_full(&tx) && !ring_empty(tx_ring.used_ring)) {
+        tx_ring.used_ring->notify_reader = false;
+        goto handle_tx_;
     }
 }
 
@@ -275,9 +298,7 @@ complete_tx(volatile struct enet_regs *eth)
     void *cookie;
     ring_ctx_t *ring = &tx;
     unsigned int read = ring->read;
-    int enqueued = 0;
-    bool was_empty = ring_empty(tx_ring.free_ring);
-
+    bool enqueued = false;
     while (!hw_ring_empty(ring) && !ring_full(tx_ring.free_ring)) {
         cookie = ring->cookies[read];
         volatile struct descriptor *d = &(ring->descr[read]);
@@ -296,12 +317,13 @@ complete_tx(volatile struct enet_regs *eth)
         /* give the buffer back */
         buff_desc_t *desc = (buff_desc_t *)cookie;
         int err = enqueue_free(&tx_ring, desc->encoded_addr, desc->len, desc->cookie);
-        _unused(err);
         assert(!err);
-        enqueued++;
+        _unused(err);
+        enqueued = true;
     }
 
-    if (was_empty && enqueued) {
+    if (enqueued && tx_ring.free_ring->notify_reader) {
+        tx_ring.free_ring->notify_reader = false;
         sel4cp_notify(TX_CH);
     }
 }
@@ -435,21 +457,6 @@ void init(void)
     tx_ring.used_ring->notify_reader = true;
     // check if we have any requests to transmit.
     handle_tx(eth);
-}
-
-seL4_MessageInfo_t
-protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
-{
-    switch (ch) {
-        case TX_CH:
-            handle_tx(eth);
-            break;
-        default:
-            sel4cp_dbg_puts("Received ppc on unexpected channel ");
-            puthex64(ch);
-            break;
-    }
-    return sel4cp_msginfo_new(0, 0);
 }
 
 void
