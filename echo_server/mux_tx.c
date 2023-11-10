@@ -22,7 +22,8 @@ uintptr_t uart_base;
 #define CLIENT_1 1
 #define ARP 2
 #define NUM_CLIENTS 3
-#define DRIVER 3
+#define DRIVER_RECV 5
+#define DRIVER_SEND 6
 #define NUM_BUFFERS 512
 #define BUF_SIZE 2048
 #define DMA_SIZE 0x200000
@@ -101,11 +102,11 @@ get_client(uintptr_t addr)
  */
 void process_tx_ready(void)
 {
-    bool enqueued = 0;
+    bool enqueued = false;
     int err;
     _unused(err);
-    process_tx_ready_:
     for (int client = 0; client < NUM_CLIENTS; client++) {
+        process_tx_ready_:
         while (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
             uintptr_t addr;
             unsigned int len;
@@ -134,7 +135,7 @@ void process_tx_ready(void)
 
     if (state.tx_ring_drv.used_ring->notify_reader && enqueued) {
         state.tx_ring_drv.used_ring->notify_reader = false;
-        sel4cp_notify_delayed(DRIVER);
+        sel4cp_notify_delayed(DRIVER_RECV);
     }
 }
 
@@ -163,9 +164,7 @@ void process_tx_complete(void)
         err = enqueue_free(&state.tx_ring_clients[client], virt, len, cookie);
         assert(!err);
 
-        if (state.tx_ring_clients[client].free_ring->notify_reader) {
-            notify_clients[client] = true;
-        }
+        notify_clients[client] = true;
     }
 
     state.tx_ring_drv.free_ring->notify_reader = true;
@@ -179,7 +178,7 @@ void process_tx_complete(void)
 
     /* Loop over bitmap and see who we need to notify. */
     for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (notify_clients[client]) {
+        if (notify_clients[client] && state.tx_ring_clients[client].free_ring->notify_reader) {
             state.tx_ring_clients[client].free_ring->notify_reader = false;
             sel4cp_notify(client);
         }
@@ -227,6 +226,11 @@ void init(void)
     state.tx_ring_clients[0].used_ring->notify_reader = true;
     state.tx_ring_clients[1].used_ring->notify_reader = true;
     state.tx_ring_clients[2].used_ring->notify_reader = true;
+    state.tx_ring_clients[0].free_ring->notify_reader = true;
+    state.tx_ring_clients[1].free_ring->notify_reader = true;
+    state.tx_ring_clients[2].free_ring->notify_reader = true;
+    state.tx_ring_drv.used_ring->notify_reader = true;
+    state.tx_ring_drv.free_ring->notify_reader = true;
 
     return;
 }

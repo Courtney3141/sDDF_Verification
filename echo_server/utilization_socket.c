@@ -23,6 +23,9 @@
 
 #define START_PMU 4
 #define STOP_PMU 5
+#define NUM_CORES 2
+#define IDLE_COUNT_POS 0x5010000
+#define IDLE_COUNT_OFFSET 0x1000
 
 /* This file implements a TCP based utilization measurment process that starts
  * and stops utilization measurements based on a client's requests.
@@ -78,12 +81,14 @@ uintptr_t cyclecounters_vaddr;
     ","STR(y)","STR(z)
 
 
-struct bench *bench = (void *)(uintptr_t)0x5010000;
+struct idle_counters {
+    struct bench *bench[NUM_CORES];
+};
 
-uint64_t start;
-uint64_t idle_ccount_start;
-uint64_t idle_overflow_start;
-
+struct idle_counters idle_counts;
+uint64_t start[4];
+uint64_t idle_ccount_start[4];
+uint64_t idle_overflow_start[4];
 
 static inline void my_reverse(char s[])
 {
@@ -147,33 +152,47 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
             sel4cp_dbg_puts("Failed to send OK message through utilization peer");
         }
     } else if (msg_match(data_packet_str, START)) {
-        print(sel4cp_name);
-        print(" measurement starting... \n");
+        print("measurement starting... \n");
         if (!strcmp(sel4cp_name, "client0")) {
-            start = bench->ts;
-            idle_ccount_start = bench->ccount;
-            idle_overflow_start = bench->overflows;
+            for (int i = 0; i < NUM_CORES; i++) {
+                start[i] = idle_counts.bench[i]->ts;
+                idle_ccount_start[i] = idle_counts.bench[i]->ccount;
+                idle_overflow_start[i] = idle_counts.bench[i]->overflows;
+            }
+
             sel4cp_notify(START_PMU);
         }
     } else if (msg_match(data_packet_str, STOP)) {
         print(sel4cp_name);
         print(" measurement finished \n");;
 
-        uint64_t total = 0, idle = 0;
+        uint64_t total = 0;
+        uint64_t idle = 0;
 
         if (!strcmp(sel4cp_name, "client0")) {
-            total = bench->ts - start;
-            total += ULONG_MAX * (bench->overflows - idle_overflow_start);
-            idle = bench->ccount - idle_ccount_start;
+            for (int i = 0; i < NUM_CORES; i++) {
+                if (idle_counts.bench[i]->ts < start[i]) {
+                    total += ULONG_MAX - start[i] + idle_counts.bench[i]->ts + 1;
+                } else {
+                    total += (idle_counts.bench[i]->ts - start[i]);
+                }
+                total += ULONG_MAX * (idle_counts.bench[i]->overflows - idle_overflow_start[i]);
+
+                if (idle_counts.bench[i]->ccount < idle_ccount_start[i]) {
+                    idle += ULONG_MAX - idle_ccount_start[i] + idle_counts.bench[i]->ccount + 1;
+                } else {
+                    idle += idle_counts.bench[i]->ccount - idle_ccount_start[i];
+                }
+            }
         }
 
-        char tbuf[16];
+        char tbuf[32];
         my_itoa(total, tbuf);
 
-        char ibuf[16];
+        char ibuf[32];
         my_itoa(idle, ibuf);
 
-        char buffer[100];
+        char buffer[120];
 
         int len = strlen(tbuf) + strlen(ibuf) + 2;
         char lbuf[16];
@@ -185,7 +204,6 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         strcat(buffer, ",");
         strcat(buffer, tbuf);
 
-        // sel4cp_dbg_puts(buffer);
         error = tcp_write(pcb, buffer, strlen(buffer), TCP_WRITE_FLAG_COPY);
 
         tcp_shutdown(pcb, 0, 1);
@@ -241,6 +259,10 @@ int setup_utilization_socket(void)
         return -1;
     }
     tcp_accept(utiliz_socket, utilization_accept_callback);
+
+
+    /* Set up shared data structures for recording idle counts */
+    for (int i = 0; i < NUM_CORES; i++) idle_counts.bench[i] = (void *)(uintptr_t)(IDLE_COUNT_POS + i*IDLE_COUNT_OFFSET);
 
     return 0;
 }

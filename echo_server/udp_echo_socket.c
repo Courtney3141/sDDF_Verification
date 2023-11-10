@@ -23,6 +23,7 @@
 #define UDP_ECHO_PORT 1235
 uintptr_t data;
 static struct udp_pcb *udp_socket;
+uintptr_t data;
 
 static const char *err_strerr[] = {
   "Ok.",                    /* ERR_OK          0  */
@@ -71,9 +72,12 @@ calculate_checksum(struct pbuf *p)
     }
 }
 
-
 static void lwip_udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
+    for (int i = 0;  i < NUM_LOOPS; i++) {
+        calculate_checksum(p);
+    }
+
     err_t error = udp_sendto(pcb, p, addr, port);
     if (error) {
         print("Failed to send UDP packet through socket: ");

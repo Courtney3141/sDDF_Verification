@@ -87,8 +87,8 @@ void process_rx_complete(void)
     if (!ring_empty(rx_ring_mux.used_ring)) rx_ring_cli.free_ring->notify_reader = true;
     else rx_ring_cli.free_ring->notify_reader = false;
 
-
     THREAD_MEMORY_FENCE();
+
     if (!ring_empty(rx_ring_mux.used_ring) && !ring_empty(rx_ring_cli.free_ring) &&
         !ring_full(rx_ring_mux.free_ring) && !ring_full(rx_ring_cli.used_ring)) {
         rx_ring_mux.used_ring->notify_reader = false;

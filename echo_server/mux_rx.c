@@ -24,7 +24,7 @@ uintptr_t uart_base;
 
 #define NUM_CLIENTS 3
 #define DMA_SIZE 0x200000
-#define DRIVER_CH 3
+#define DRIVER_CH 5
 
 #define ETHER_MTU 1500
 
@@ -151,10 +151,9 @@ void process_rx_complete(void)
             if (err) {
                 print("MUX RX|ERROR: failed to enqueue onto used ring\n");
             }
+            
+            notify_clients[client] = true;
 
-            if (state.rx_ring_clients[client].used_ring->notify_reader) {
-                notify_clients[client] = true;
-            }
         } else {
             // either the packet is not for us, or the client queue is full.
             // return the buffer to the driver.
@@ -178,7 +177,7 @@ void process_rx_complete(void)
 
     /* Loop over bitmap and see who we need to notify. */
     for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (notify_clients[client]) {
+        if (notify_clients[client] && state.rx_ring_clients[client].used_ring->notify_reader) {
             state.rx_ring_clients[client].used_ring->notify_reader = false;
             sel4cp_notify(client);
         }
@@ -295,7 +294,15 @@ void init(void)
         _unused(err);
     }
     // ensure we get a notification when a packet comes in
+    state.rx_ring_clients[0].free_ring->notify_reader = true;
+    state.rx_ring_clients[1].free_ring->notify_reader = true;
+    state.rx_ring_clients[2].free_ring->notify_reader = true;
+    state.rx_ring_clients[0].used_ring->notify_reader = true;
+    state.rx_ring_clients[1].used_ring->notify_reader = true;
+    state.rx_ring_clients[2].used_ring->notify_reader = true;
     state.rx_ring_drv.used_ring->notify_reader = true;
+    state.rx_ring_drv.free_ring->notify_reader = true;
+
     // Notify the driver that we are ready to receive
     sel4cp_notify(DRIVER_CH);
 

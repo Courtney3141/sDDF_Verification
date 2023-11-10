@@ -13,33 +13,17 @@
 #include "bench.h"
 #include "util.h"
 #include "pd_ids.h"
-
-#define MAGIC_CYCLES 150
-#define ULONG_MAX 0xfffffffffffffffful
-#define UINT_MAX 0xfffffffful
-
-#define LOG_BUFFER_CAP 7
+#include "utilisation_benchmark.h"
 
 #define START 1
 #define STOP 2
-
-#define IDLE0 3
-#define IDLE1 4
-#define IDLE2 5
-#define IDLE3 6
-
-#define NOTIFY_START 7
-#define NOTIFY_STOP 8
+#define NOTIFY_START 3
+#define NOTIFY_STOP 4
 
 uintptr_t uart_base;
-uintptr_t cyclecounters_vaddr;
 
 ccnt_t counter_values[8];
 counter_bitfield_t benchmark_bf;
-
-#ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
-benchmark_track_kernel_entry_t *log_buffer;
-#endif
 
 char *counter_names[] = {
     "L1 i-cache misses",
@@ -59,7 +43,6 @@ event_id_t benchmarking_events[] = {
     SEL4BENCH_EVENT_BRANCH_MISPREDICT,
 };
 
-#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 static void
 sel4cp_benchmark_start(void)
 {
@@ -73,31 +56,6 @@ sel4cp_benchmark_start(void)
     // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_TIMER);
     // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_ETH2);
     seL4_BenchmarkResetLog();
-}
-
-static void
-sel4cp_benchmark_stop(uint64_t *total, uint64_t* idle, uint64_t *kernel, uint64_t *entries)
-{
-    seL4_BenchmarkFinalizeLog();
-    seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
-    uint64_t *buffer = (uint64_t *)&seL4_GetIPCBuffer()->msg[0];
-
-    *total = buffer[BENCHMARK_TOTAL_UTILISATION];
-    *idle = buffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION];
-    *kernel = buffer[BENCHMARK_TOTAL_KERNEL_UTILISATION];
-    *entries = buffer[BENCHMARK_TOTAL_NUMBER_KERNEL_ENTRIES];
-}
-
-static void
-sel4cp_benchmark_stop_tcb(uint64_t pd_id, uint64_t *total, uint64_t *number_schedules, uint64_t *kernel, uint64_t *entries)
-{
-    seL4_BenchmarkGetThreadUtilisation(BASE_TCB_CAP + pd_id);
-    uint64_t *buffer = (uint64_t *)&seL4_GetIPCBuffer()->msg[0];
-
-    *total = buffer[BENCHMARK_TCB_UTILISATION];
-    *number_schedules = buffer[BENCHMARK_TCB_NUMBER_SCHEDULES];
-    *kernel = buffer[BENCHMARK_TCB_KERNEL_UTILISATION];
-    *entries = buffer[BENCHMARK_TCB_NUMBER_KERNEL_ENTRIES];
 }
 
 static void
@@ -122,68 +80,15 @@ print_benchmark_details(uint64_t pd_id, uint64_t kernel_util, uint64_t kernel_en
     print("TotalUtilisation: ");
     puthex64(total_util);
     print("\n");
-    print("}\n");
 }
-#endif
-
-#ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
-static inline void seL4_BenchmarkTrackDumpSummary(benchmark_track_kernel_entry_t *logBuffer, uint64_t logSize)
-{
-    seL4_Word index = 0;
-    seL4_Word syscall_entries = 0;
-    seL4_Word fastpaths = 0;
-    seL4_Word interrupt_entries = 0;
-    seL4_Word userlevelfault_entries = 0;
-    seL4_Word vmfault_entries = 0;
-    seL4_Word debug_fault = 0;
-    seL4_Word other = 0;
-
-    while (logBuffer[index].start_time != 0 && index < logSize) {
-        if (logBuffer[index].entry.path == Entry_Syscall) {
-            if (logBuffer[index].entry.is_fastpath) {
-                fastpaths++;
-            }
-            syscall_entries++;
-        } else if (logBuffer[index].entry.path == Entry_Interrupt) {
-            interrupt_entries++;
-        } else if (logBuffer[index].entry.path == Entry_UserLevelFault) {
-            userlevelfault_entries++;
-        } else if (logBuffer[index].entry.path == Entry_VMFault) {
-            vmfault_entries++;
-        } else if (logBuffer[index].entry.path == Entry_DebugFault) {
-            debug_fault++;
-        } else {
-            other++;
-        }
-        index++;
-    }
-
-    print("Number of system call invocations ");
-    puthex64(syscall_entries);
-    print(" and fastpaths ")
-    puthex64(fastpaths);
-    print("\n");
-    print("Number of interrupt invocations ");
-    puthex64(interrupt_entries);
-    print("\n");
-    print("Number of user-level faults ");
-    puthex64(userlevelfault_entries);
-    print("\n");
-    print("Number of VM faults ");
-    puthex64(vmfault_entries);
-    print("\n");
-    print("Number of debug faults ");
-    puthex64(debug_fault);
-    print("\n");
-    print("Number of others ");
-    puthex64(other);
-    print("\n");
-}
-#endif
-
 
 void notified(sel4cp_channel ch)
 {
+    uint64_t total;
+    uint64_t kernel;
+    uint64_t entries;
+    uint64_t idle;
+    // uint64_t number_schedules;
     switch(ch) {
         case START:
             sel4bench_reset_counters();
@@ -191,21 +96,15 @@ void notified(sel4cp_channel ch)
 
             sel4bench_start_counters(benchmark_bf);
 
-            #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
             sel4cp_benchmark_start();
-            #endif
 
-            #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
-            seL4_BenchmarkResetLog();
-            #endif
-
+            sel4cp_notify(NOTIFY_START);
             break;
         case STOP:
             sel4bench_get_counters(benchmark_bf, &counter_values[0]);
             sel4bench_stop_counters(benchmark_bf);
 
-            // Dump the counters 
-            print("{CORE 3: \n");
+            print("{CORE 2: \n");
             for (int i = 0; i < ARRAY_SIZE(benchmarking_events); i++) {
                 print(counter_names[i]);
                 print(": ");
@@ -214,11 +113,6 @@ void notified(sel4cp_channel ch)
             }
             print("}\n");
 
-            uint64_t total;
-            uint64_t kernel;
-            uint64_t entries;
-            uint64_t idle;
-            // uint64_t number_schedules;
             sel4cp_benchmark_stop(&total, &idle, &kernel, &entries);
             print_benchmark_details(TCB_CAP, kernel, entries, idle, total);
 
@@ -245,14 +139,6 @@ void notified(sel4cp_channel ch)
 
             // sel4cp_benchmark_stop_tcb(PD_ETH2, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_ETH2, kernel, entries, number_schedules, total);
-
-            #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
-            entries = seL4_BenchmarkFinalizeLog();
-            print("KernelEntries");
-            print(": ");
-            puthex64(entries);
-            seL4_BenchmarkTrackDumpSummary(log_buffer, entries);
-            #endif
             THREAD_MEMORY_RELEASE();
             sel4cp_notify(NOTIFY_STOP);
             break;
@@ -281,20 +167,4 @@ void init(void)
     sel4bench_start_counters(mask);
 
     benchmark_bf = mask;
-
-    // Notify the idle thread that the sel4bench library is initialised.
-    sel4cp_notify(IDLE0);
-    sel4cp_notify(IDLE1);
-    sel4cp_notify(IDLE2);
-    sel4cp_notify(IDLE3);
-
-#ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
-    int res_buf = seL4_BenchmarkSetLogBuffer(LOG_BUFFER_CAP);
-    if (res_buf) {
-        print("Could not set log buffer");
-        puthex64(res_buf);
-    } else {
-        print("We set the log buffer\n");
-    }
-#endif
 }

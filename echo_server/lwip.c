@@ -339,18 +339,14 @@ process_tx_queue(void)
     // if curr != NULL, we need to make sure we don't lose it and can come back
     state.head = current;
 
-    if (current == NULL || !ring_empty(state.tx_ring.free_ring)) {
+    if (current == NULL || !ring_empty(state.tx_ring.free_ring)) cancel_free_ntfn(&state.tx_ring);
+    else request_free_ntfn(&state.tx_ring);
+
+    THREAD_MEMORY_FENCE();
+
+    if (current != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
         cancel_free_ntfn(&state.tx_ring);
-    } else {
-        request_free_ntfn(&state.tx_ring);
-
-        THREAD_MEMORY_FENCE();
-
-        if (current != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
-            cancel_free_ntfn(&state.tx_ring);
-            goto process_tx_queue_;
-        }
-
+        goto process_tx_queue_;
     }
 }
 
@@ -518,6 +514,7 @@ void init(void)
     setup_utilization_socket();
 
     request_used_ntfn(&state.rx_ring);
+    request_free_ntfn(&state.rx_ring);
     request_used_ntfn(&state.tx_ring);
     request_free_ntfn(&state.tx_ring);
 

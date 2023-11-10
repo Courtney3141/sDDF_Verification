@@ -5,6 +5,7 @@
 #include "lwip/ip_addr.h"
 #include "netif/etharp.h"
 
+#define RX_CH 0
 #define TX_CH 1
 #define REG_IP 0
 #define CLIENT_CH_START 2
@@ -161,7 +162,8 @@ arp_reply(const uint8_t ethsrc_addr[ETH_HWADDR_LEN],
 void
 process_rx_complete(void)
 {
-    uint32_t transmitted = 0;
+    bool transmitted = false;
+    bool received = false;
     process_rx_complete_: 
     while (!ring_empty(rx_ring.used_ring)) {
         int err;
@@ -191,13 +193,14 @@ process_rx_complete(void)
                                 pkt->hwsrc_addr,
                                 pkt->ipsrc_addr))
                     {
-                        transmitted++;
+                        transmitted = true;
                     }
                 }
             }
         }
 
         err = enqueue_free(&rx_ring, addr, BUF_SIZE, cookie);
+        received = true;
         assert(!err);
     }
 
@@ -208,10 +211,16 @@ process_rx_complete(void)
         goto process_rx_complete_;
     }
 
-    if (transmitted) {
+    if (transmitted && tx_ring.used_ring->notify_reader) {
         // notify tx mux
         tx_ring.used_ring->notify_reader = false;
         sel4cp_notify_delayed(TX_CH);
+    }
+
+    if (received && rx_ring.free_ring->notify_reader) {
+        // notify rx mux
+        rx_ring.free_ring->notify_reader = false;
+        sel4cp_notify_delayed(RX_CH);
     }
 }
 
@@ -290,6 +299,8 @@ init(void)
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, 0, NUM_BUFFERS, NUM_BUFFERS);
 
     rx_ring.used_ring->notify_reader = true;
+    rx_ring.free_ring->notify_reader = true;
+    tx_ring.used_ring->notify_reader = true;
     tx_ring.free_ring->notify_reader = true;
 
     /* Set up hardcoded mac addresses */

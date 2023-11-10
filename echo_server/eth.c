@@ -14,6 +14,8 @@
 #define IRQ_CH 0
 #define TX_CH  1
 #define RX_CH  2
+#define INIT   3
+#define ETH_CLI 3
 
 #define NUM_BUFFERS 512
 
@@ -156,11 +158,8 @@ fill_rx_bufs(void)
     }
 
     /* Only get notified if more rx bufs are available if hw ring not full */
-    if (!hw_ring_full(ring)) {
-        rx_ring.free_ring->notify_reader = true;
-    } else {
-        rx_ring.free_ring->notify_reader = false;
-    }
+    if (!hw_ring_full(ring)) rx_ring.free_ring->notify_reader = true;
+    else rx_ring.free_ring->notify_reader = false;
 
     THREAD_MEMORY_FENCE();
 
@@ -357,7 +356,7 @@ eth_setup(void)
 {
     get_mac_addr(eth, mac);
     sel4cp_dbg_puts("MAC: ");
-    // dump_mac(mac);
+    dump_mac(mac);
     sel4cp_dbg_puts("\n");
 
     /* set up descriptor rings */
@@ -455,6 +454,10 @@ void init(void)
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, 0, NUM_BUFFERS, NUM_BUFFERS);
 
     tx_ring.used_ring->notify_reader = true;
+    tx_ring.free_ring->notify_reader = true;
+    rx_ring.used_ring->notify_reader = true;
+    rx_ring.free_ring->notify_reader = true;
+
     // check if we have any requests to transmit.
     handle_tx(eth);
 }
