@@ -199,6 +199,7 @@ void notified(sel4cp_channel ch)
             seL4_BenchmarkResetLog();
             #endif
 
+            sel4cp_notify(NOTIFY_START);
             break;
         case STOP:
             sel4bench_get_counters(benchmark_bf, &counter_values[0]);
