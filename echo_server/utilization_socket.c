@@ -171,40 +171,30 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
 
         if (!strcmp(sel4cp_name, "client0")) {
             for (int i = 0; i < NUM_CORES; i++) {
-                if (idle_counts.bench[i]->ts < start[i]) {
-                    total += ULONG_MAX - start[i] + idle_counts.bench[i]->ts + 1;
-                } else {
-                    total += (idle_counts.bench[i]->ts - start[i]);
-                }
-                total += ULONG_MAX * (idle_counts.bench[i]->overflows - idle_overflow_start[i]);
-
-                if (idle_counts.bench[i]->ccount < idle_ccount_start[i]) {
-                    idle += ULONG_MAX - idle_ccount_start[i] + idle_counts.bench[i]->ccount + 1;
-                } else {
-                    idle += idle_counts.bench[i]->ccount - idle_ccount_start[i];
-                }
+                total += (idle_counts.bench[i]->ts - start[i]);
+                idle += idle_counts.bench[i]->ccount - idle_ccount_start[i];
             }
         }
 
-        char tbuf[32];
+        char tbuf[21];
         my_itoa(total, tbuf);
 
-        char ibuf[32];
+        char ibuf[21];
         my_itoa(idle, ibuf);
 
-        char buffer[120];
-
-        int len = strlen(tbuf) + strlen(ibuf) + 2;
+        // Message contains ",total,idle\0"
+        int len = strlen(tbuf) + strlen(ibuf) + 3;
         char lbuf[16];
         my_itoa(len, lbuf);
 
+        char buffer[120];
         strcat(strcpy(buffer, "220 VALID DATA (Data to follow)\nContent-length: "), lbuf);
         strcat(buffer, "\n,");
         strcat(buffer, ibuf);
         strcat(buffer, ",");
         strcat(buffer, tbuf);
-
-        error = tcp_write(pcb, buffer, strlen(buffer), TCP_WRITE_FLAG_COPY);
+        
+        error = tcp_write(pcb, buffer, strlen(buffer) + 1, TCP_WRITE_FLAG_COPY);
 
         tcp_shutdown(pcb, 0, 1);
 
@@ -228,7 +218,7 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
 
 static err_t utilization_accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
-    print("Utilization connection established!\n");
+    // print("Utilization connection established!\n");
     err_t error = tcp_write(newpcb, WHOAMI, strlen(WHOAMI), TCP_WRITE_FLAG_COPY);
     if (error) {
         print("Failed to send WHOAMI message through utilization peer\n");
