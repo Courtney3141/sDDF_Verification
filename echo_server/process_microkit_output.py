@@ -3,6 +3,9 @@
 import sys
 import re
 
+teststring = sys.argv[1].split(',')
+testunit = sys.argv[2]
+
 test = 1
 current_core = 0
 core_totals = [0,0,0,0]
@@ -18,16 +21,16 @@ def finish_and_print():
     # Add idle thread
     for i in range(4):
         idle_util = 1 - (pd_totals[i]/core_totals[i])
-        measurement_results[i].append(result_string("IDLE " + str(i), core_totals[i] - pd_totals[i], 0, 0, 0, 0, idle_util))
+        measurement_results[i].append(result_string("CORE " + str(i) + ": IDLE", core_totals[i] - pd_totals[i], 0, 0, 0, 0, idle_util))
 
     # Print results
     print("CORE TOTALS")
     print('\n'.join(core_results), end ='\n\n')
+    print("PROTECTION DOMAINS")
     for i in range(4):
-        print("CORE " + str(i) + " PROTECTION DOMAINS")
         print('\n'.join(measurement_results[i]))
     
-    print(f"TOTAL CPU UTIL: 4 * {sum(pd_totals)} / {sum(core_totals)} = {4 * (sum(pd_totals) / sum(core_totals))}")
+    print(f"\nTOTAL CPU UTIL,0,0,0,0,0,{4 * (sum(pd_totals) / sum(core_totals))}")
 
     # Clear globals
     for i in range(4):
@@ -35,7 +38,7 @@ def finish_and_print():
         measurement_results[i].clear()
 
 print("Component,Total Cycles,Kernel Cycles,User Cycles,Kernel Entries,Schedules,Per Core CPU Utilisation")
-file = sys.argv[1]
+file = sys.argv[3]
 with open(file, "r") as f:
     for line in f:
         # New benchmark started
@@ -44,7 +47,7 @@ with open(file, "r") as f:
                 finish_and_print()
                 test += 1
                 print()
-            print("TEST", test)
+            print(f"TEST {test}: {teststring[test-1]}{testunit}")
             continue
             
         # Change core
@@ -69,7 +72,7 @@ with open(file, "r") as f:
 
         # Protection domain utilisation details
         elif match:
-            pd = match.group(1)
+            pd = "CORE " + str(current_core) + ": " + match.group(1)
             kernel_util = eval(next(f)[-19:-1])
             kernel_entries = eval(next(f)[-19:-1])
             schedules = eval(next(f)[-19:-1])
@@ -87,8 +90,11 @@ with open(file, "r") as f:
             if match and "psci" not in match.group(1):
                 # it's a pmu data thing.
                 if match.group(1) not in pmu:
-                    pmu[match.group(1)] = []
-                pmu[match.group(1)].append(eval(match.group(2)))
+                    pmu[match.group(1)] = [eval(match.group(2))]
+                elif len(pmu[match.group(1)]) == (test - 1):
+                    pmu[match.group(1)].append(eval(match.group(2)))
+                else:
+                    pmu[match.group(1)][test-1] += eval(match.group(2))
 
 # Print results from last test
 if core_totals[0]:
