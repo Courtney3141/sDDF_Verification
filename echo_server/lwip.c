@@ -21,6 +21,7 @@
 #include "echo.h"
 #include "timer.h"
 #include "cache.h"
+#include "printf.h"
 
 #define TIMER  1
 #define RX_CH  2

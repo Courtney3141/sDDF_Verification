@@ -10,6 +10,7 @@
 #include "eth.h"
 #include "shared_ringbuffer.h"
 #include "util.h"
+#include "printf.h"
 
 #define IRQ_CH 0
 #define TX_CH  1

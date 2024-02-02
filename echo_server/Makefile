@@ -94,9 +94,9 @@ NETIFFILES=$(LWIPDIR)/netif/ethernet.c
 
 # LWIPFILES: All the above.
 LWIPFILES=lwip.c lwip_timer.c cache.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
-LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o
+LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o printf.o
 
-ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o
+ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o printf.o
 MUX_RX_OBJS := mux_rx.o libsharedringbuffer/shared_ringbuffer.o
 MUX_TX_OBJS := mux_tx.o libsharedringbuffer/shared_ringbuffer.o
 #MUX_TX_OBJS := mux_tx_bandwidth_limited.o libsharedringbuffer/shared_ringbuffer.o
