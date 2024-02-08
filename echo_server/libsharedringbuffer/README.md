@@ -3,6 +3,8 @@
    SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
+CDTODO: Update me!
+
 libsharedringbuffer
 -------------------
 
@@ -64,3 +66,22 @@ The driver wants to add some buffer that will be read by another component
     4. Similarly, the reciever dequeues the pointer from the used ring,
     processes the data, and once finished, can enqueue it back into
     the free ring to be used once more by the driver.
+
+Head/Tail Mechanism
+-------------------
+Buffers from tail through to head - 1 inclusive are available to be used. Producers
+insert at the head index and consumers remove from the tail index.
+
+T = Tail
+H = Head
+E = Empty
+F = Full
+
+If non-empty, the ring looks like either:
+0 <= T <= H < LENGTH
+[ E | E | TF | F | F | F | F | HE | E | E ]
+
+               OR
+
+0 <= H < T < LENGTH
+[ F | F | F | HE | E | E | E | TF | F | F ]

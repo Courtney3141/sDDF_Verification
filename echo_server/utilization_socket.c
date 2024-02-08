@@ -10,17 +10,18 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <string.h>
 #include <sel4cp.h>
+#include <string.h>
 
 #include "lwip/ip.h"
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
 
-#include "echo.h"
 #include "bench.h"
+#include "echo.h"
 #include "util.h"
 
+/* Notification channels - ensure these align with .system file! */
 #define START_PMU 4
 #define STOP_PMU 5
 
@@ -151,9 +152,9 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         print(" measurement starting... \n");
         if (!strcmp(sel4cp_name, "client0")) {
             start = bench->ts;
-            idle_ccount_start = bench->ccount;
-            idle_overflow_start = bench->overflows;
-            sel4cp_notify(START_PMU);
+                idle_ccount_start = bench->ccount;
+                idle_overflow_start = bench->overflows;
+                        sel4cp_notify(START_PMU);
         }
     } else if (msg_match(data_packet_str, STOP)) {
         print(sel4cp_name);
@@ -164,29 +165,28 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         if (!strcmp(sel4cp_name, "client0")) {
             total = bench->ts - start;
             total += ULONG_MAX * (bench->overflows - idle_overflow_start);
-            idle = bench->ccount - idle_ccount_start;
+                idle = bench->ccount - idle_ccount_start;
         }
 
-        char tbuf[16];
+        char tbuf[21];
         my_itoa(total, tbuf);
 
-        char ibuf[16];
+        char ibuf[21];
         my_itoa(idle, ibuf);
 
-        char buffer[100];
-
-        int len = strlen(tbuf) + strlen(ibuf) + 2;
+        // Message contains ",total,idle\0"
+        int len = strlen(tbuf) + strlen(ibuf) + 3;
         char lbuf[16];
         my_itoa(len, lbuf);
 
+        char buffer[120];
         strcat(strcpy(buffer, "220 VALID DATA (Data to follow)\nContent-length: "), lbuf);
         strcat(buffer, "\n,");
         strcat(buffer, ibuf);
         strcat(buffer, ",");
         strcat(buffer, tbuf);
-
-        // sel4cp_dbg_puts(buffer);
-        error = tcp_write(pcb, buffer, strlen(buffer), TCP_WRITE_FLAG_COPY);
+        
+        error = tcp_write(pcb, buffer, strlen(buffer) + 1, TCP_WRITE_FLAG_COPY);
 
         tcp_shutdown(pcb, 0, 1);
 

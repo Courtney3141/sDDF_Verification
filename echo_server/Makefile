@@ -97,13 +97,13 @@ LWIPFILES=lwip.c lwip_timer.c cache.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
 LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o printf.o
 
 ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o printf.o
-MUX_RX_OBJS := mux_rx.o libsharedringbuffer/shared_ringbuffer.o
-MUX_TX_OBJS := mux_tx.o libsharedringbuffer/shared_ringbuffer.o
+MUX_RX_OBJS := mux_rx.o libsharedringbuffer/shared_ringbuffer.o printf.o
+MUX_TX_OBJS := mux_tx.o libsharedringbuffer/shared_ringbuffer.o printf.o
 #MUX_TX_OBJS := mux_tx_bandwidth_limited.o libsharedringbuffer/shared_ringbuffer.o
-COPY_OBJS := copy.o libsharedringbuffer/shared_ringbuffer.o
+COPY_OBJS := copy.o libsharedringbuffer/shared_ringbuffer.o printf.o
 BENCH_OBJS := benchmark/benchmark.o
 IDLE_OBJS := benchmark/idle.o
-ARP_OBJS := cache.o $(LWIPDIR)/core/inet_chksum.o $(LWIPDIR)/core/def.o arp.o libsharedringbuffer/shared_ringbuffer.o
+ARP_OBJS := cache.o $(LWIPDIR)/core/inet_chksum.o $(LWIPDIR)/core/def.o arp.o libsharedringbuffer/shared_ringbuffer.o printf.o
 TIMER_OBJS := timer.o
 
 OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(ETH_OBJS) $(MUX_RX_OBJS) $(MUX_TX_OBJS)\
