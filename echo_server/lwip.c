@@ -47,11 +47,17 @@ uintptr_t uart_base;
 static bool notify_tx;
 static bool notify_rx;
 
+/* Wrapper over custom_pbuf structure to keep track of buffer offset */
+typedef struct pbuf_custom_offset {
+    struct pbuf_custom custom;
+    uintptr_t offset;
+} pbuf_custom_offset_t;
+
 /* Initialise an array to hold lwip pbuffs */
 LWIP_MEMPOOL_DECLARE(
     RX_POOL,
     NUM_BUFFERS * 2,
-    sizeof(struct pbuf_custom),
+    sizeof(struct pbuf_custom_offset),
     "Zero-copy RX pool"
 );
 
@@ -80,14 +86,14 @@ state_t state;
 static void interface_free_buffer(struct pbuf *p)
 {
     SYS_ARCH_DECL_PROTECT(old_level);
-    struct pbuf_custom *custom_pbuf = (struct pbuf_custom *)p;
+    pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
-    buff_desc_t buffer = {(uintptr_t) (custom_pbuf->pbuf.payload - rx_buffer_data_region), 0, 0, NULL};
+    buff_desc_t buffer = {custom_pbuf_offset->offset, 0, 0, NULL};
     /* CDTODO: No obvious way to ensure that the free ring is not full before this function is called... */
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
     notify_rx = true;
-    LWIP_MEMPOOL_FREE(RX_POOL, custom_pbuf);
+    LWIP_MEMPOOL_FREE(RX_POOL, custom_pbuf_offset);
     SYS_ARCH_UNPROTECT(old_level);
 }
 
@@ -100,17 +106,18 @@ static void interface_free_buffer(struct pbuf *p)
  *
  * @return the newly created pbuf. Can be cast to pbuf_custom.
  */
-static struct pbuf *create_interface_buffer(uintptr_t buffer, size_t length)
+static struct pbuf *create_interface_buffer(uintptr_t offset, size_t length)
 {
-    struct pbuf_custom *custom_pbuf = (struct pbuf_custom *) LWIP_MEMPOOL_ALLOC(RX_POOL);
-    custom_pbuf->custom_free_function = interface_free_buffer;
+    pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *) LWIP_MEMPOOL_ALLOC(RX_POOL);
+    custom_pbuf_offset->offset = offset;
+    custom_pbuf_offset->custom.custom_free_function = interface_free_buffer;
 
     return pbuf_alloced_custom(
         PBUF_RAW,
         length,
         PBUF_REF,
-        custom_pbuf,
-        (void *)buffer,
+        &custom_pbuf_offset->custom,
+        (void *)(offset + rx_buffer_data_region),
         BUF_SIZE
     );
 }
@@ -215,7 +222,7 @@ void receive(void)
             if (err) printf("LWIP|ERROR: ARM Vspace invalidate failed with err %d\n", err);
             assert(!err); */
 
-            struct pbuf *p = create_interface_buffer(buffer.offset + rx_buffer_data_region, buffer.len);
+            struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
 
             if (state.netif.input(p, &state.netif) != ERR_OK) {
                 printf("LWIP|ERROR: unkown error inputting pbuf into network stack\n");
