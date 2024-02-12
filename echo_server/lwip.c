@@ -216,10 +216,10 @@ void receive(void)
             int err __attribute__((unused)) = dequeue_used(&state.rx_ring, &buffer);
             assert(!err);
 
-            /* If client is communicating directly with driver, cache of this buffer must be invalidated 
+            /* If client is communicating directly with driver, cache of this buffer must be invalidated */ 
             err = seL4_ARM_VSpace_Invalidate_Data(3, buffer.offset + rx_buffer_data_region, buffer.offset + rx_buffer_data_region + buffer.len);
             if (err) printf("LWIP|ERROR: ARM Vspace invalidate failed with err %d\n", err);
-            assert(!err); */
+            assert(!err);
 
             struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
             if (state.netif.input(p, &state.netif) != ERR_OK) {
@@ -264,15 +264,7 @@ static err_t ethernet_init(struct netif *netif)
 /* Callback function that prints DHCP supplied IP address and registers it with ARP component. */
 static void netif_status_callback(struct netif *netif)
 {
-    if (dhcp_supplied_address(netif)) {
-        /* CDTODO: Only send IP address to ARP if ARP exists */
-        sel4cp_mr_set(0, ip4_addr_get_u32(netif_ip4_addr(netif)));
-        sel4cp_mr_set(1, (state.mac[0] << 24) | (state.mac[1] << 16) | (state.mac[2] << 8) | (state.mac[3]));
-        sel4cp_mr_set(2, (state.mac[4] << 24) | (state.mac[5] << 16));
-        sel4cp_ppcall(ARP, sel4cp_msginfo_new(0, 3));
-
-        printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", sel4cp_name, ip4addr_ntoa(netif_ip4_addr(netif)));
-    }
+    if (dhcp_supplied_address(netif)) printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", sel4cp_name, ip4addr_ntoa(netif_ip4_addr(netif)));
 }
 
 static void get_mac(void)
@@ -283,18 +275,7 @@ static void get_mac(void)
     state.mac[2] = 0x1;
     state.mac[3] = 0;
     state.mac[4] = 0;
-    if (!strcmp(sel4cp_name, "client0")) state.mac[5] = 0;
-    else state.mac[5] = 0x1;
-
-    /* sel4cp_ppcall(RX_CH, sel4cp_msginfo_new(0, 0));
-    uint32_t palr = sel4cp_mr_get(0);
-    uint32_t paur = sel4cp_mr_get(1);
-    state.mac[0] = palr >> 24;
-    state.mac[1] = palr >> 16 & 0xff;
-    state.mac[2] = palr >> 8 & 0xff;
-    state.mac[3] = palr & 0xff;
-    state.mac[4] = paur >> 24;
-    state.mac[5] = paur >> 16 & 0xff;*/
+    state.mac[5] = 0;
 }
 
 void init(void)

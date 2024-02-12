@@ -39,7 +39,7 @@ RINGBUFFERDIR=libsharedringbuffer
 
 BOARD_DIR := $(SEL4CP_SDK)/board/$(SEL4CP_BOARD)/$(SEL4CP_CONFIG)
 
-IMAGES := eth.elf lwip.elf benchmark.elf idle.elf mux_rx.elf mux_tx.elf copy.elf arp.elf timer.elf
+IMAGES := eth.elf lwip.elf benchmark.elf idle.elf timer.elf
 CFLAGS := -mcpu=$(CPU) -mstrict-align -ffreestanding -g3 -O3 -Wall -Wno-unused-function -DNO_ASSERT
 
 LDFLAGS := -L$(BOARD_DIR)/lib -L.
@@ -97,18 +97,13 @@ LWIPFILES=lwip.c lwip_timer.c cache.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
 LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o printf.o
 
 ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o printf.o
-MUX_RX_OBJS := mux_rx.o libsharedringbuffer/shared_ringbuffer.o printf.o
-MUX_TX_OBJS := mux_tx.o libsharedringbuffer/shared_ringbuffer.o printf.o
-#MUX_TX_OBJS := mux_tx_bandwidth_limited.o libsharedringbuffer/shared_ringbuffer.o
-COPY_OBJS := copy.o libsharedringbuffer/shared_ringbuffer.o printf.o
 BENCH_OBJS := benchmark/benchmark.o printf.o
 IDLE_OBJS := benchmark/idle.o
-ARP_OBJS := cache.o $(LWIPDIR)/core/inet_chksum.o $(LWIPDIR)/core/def.o arp.o libsharedringbuffer/shared_ringbuffer.o printf.o
 TIMER_OBJS := timer.o
 
-OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(ETH_OBJS) $(MUX_RX_OBJS) $(MUX_TX_OBJS)\
-	$(COPY_OBJS) $(BENCH_OBJS) $(IDLE_OBJS) \
-	$(LWIP_OBJS) $(ARP_OBJS) $(TIMER_OBJS)))
+OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(ETH_OBJS)\
+	$(BENCH_OBJS) $(IDLE_OBJS) \
+	$(LWIP_OBJS) $(TIMER_OBJS)))
 DEPS := $(OBJS:.o=.d)
 
 all: $(IMAGE_FILE)
@@ -127,22 +122,10 @@ $(BUILD_DIR)/eth.elf: $(addprefix $(BUILD_DIR)/, $(ETH_OBJS))
 $(BUILD_DIR)/lwip.elf: $(addprefix $(BUILD_DIR)/, $(LWIP_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/mux_rx.elf: $(addprefix $(BUILD_DIR)/, $(MUX_RX_OBJS))
-	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
-
-$(BUILD_DIR)/mux_tx.elf: $(addprefix $(BUILD_DIR)/, $(MUX_TX_OBJS))
-	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
-
-$(BUILD_DIR)/copy.elf: $(addprefix $(BUILD_DIR)/, $(COPY_OBJS))
-	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
-
 $(BUILD_DIR)/benchmark.elf: $(addprefix $(BUILD_DIR)/, $(BENCH_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/idle.elf: $(addprefix $(BUILD_DIR)/, $(IDLE_OBJS))
-	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
-
-$(BUILD_DIR)/arp.elf: $(addprefix $(BUILD_DIR)/, $(ARP_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
