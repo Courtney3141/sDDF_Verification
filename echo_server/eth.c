@@ -17,12 +17,6 @@
 #define TX_CH  1
 #define RX_CH  2
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
-#define NUM_CLIENTS 3
-
-/* CDTODO: How should this work... */
-uintptr_t phys_address_regions[NUM_CLIENTS];
-
 /* HW ring buffer regions */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -35,19 +29,10 @@ uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
 
-/* Buffer data regions vaddr CDTODO: Remove these with build flags */
-uintptr_t rx_buffer_data_region_vaddr;
-uintptr_t tx_buffer_data_region_arp_vaddr;
-uintptr_t tx_buffer_data_region_cli0_vaddr;
-uintptr_t tx_buffer_data_region_cli1_vaddr;
-
-/* Buffer data regions */
+/* Buffer data regions paddr */
 uintptr_t rx_buffer_data_region_paddr;
-uintptr_t tx_buffer_data_region_arp_paddr;
-uintptr_t tx_buffer_data_region_cli0_paddr;
-uintptr_t tx_buffer_data_region_cli1_paddr;
+uintptr_t tx_buffer_data_region_paddr;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 /* Packet configuration */
@@ -226,7 +211,7 @@ static void tx_provide(void)
             int err __attribute__((unused)) = dequeue_used(&tx_ring, &buffer);
             assert(!err);
 
-            uintptr_t phys = buffer.offset + phys_address_regions[buffer.dma_region_id];
+            uintptr_t phys = buffer.offset + tx_buffer_data_region_paddr;
         
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
             if (tx.head + 1 == tx.size) stat |= WRAP;
@@ -381,10 +366,6 @@ void init(void)
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
 
     buffers_init((ring_buffer_t *)rx_free, 0, NUM_BUFFERS, BUF_SIZE);
-
-    phys_address_regions[0] = tx_buffer_data_region_cli0_paddr;
-    phys_address_regions[1] = tx_buffer_data_region_cli1_paddr;
-    phys_address_regions[2] = tx_buffer_data_region_arp_paddr;
 
     rx_provide();
     tx_provide();

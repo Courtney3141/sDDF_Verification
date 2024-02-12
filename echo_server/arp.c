@@ -38,7 +38,6 @@ uintptr_t tx_used;
 uintptr_t rx_buffer_data_region;
 uintptr_t tx_buffer_data_region;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 /* Client network configuration */

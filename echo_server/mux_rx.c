@@ -28,7 +28,6 @@ uintptr_t rx_used_arp;
 /* Buffer data regions */
 uintptr_t buffer_data_vaddr;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 typedef struct state {
@@ -39,7 +38,7 @@ typedef struct state {
 
 state_t state;
 
-/* CDTODO: Boolean to indicate whether a packet has been enqueued into the driver's free ring during notification handling */
+/* Boolean to indicate whether a packet has been enqueued into the driver's free ring during notification handling */
 static bool notify_drv;
 
 /* Return the client ID if the Mac address is a match. */

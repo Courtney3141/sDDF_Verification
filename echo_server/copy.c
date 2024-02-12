@@ -22,7 +22,6 @@ uintptr_t rx_used_cli;
 uintptr_t mux_buffer_data_region;
 uintptr_t cli_buffer_data_region;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 void rx_return(void)

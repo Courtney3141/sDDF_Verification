@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <sel4cp.h>
+
 #include "util.h"
 
 #define GET_TIME 0

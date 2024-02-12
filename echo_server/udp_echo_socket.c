@@ -21,7 +21,6 @@
 
 #define NUM_LOOPS 10
 #define UDP_ECHO_PORT 1235
-uintptr_t data;
 static struct udp_pcb *udp_socket;
 
 static const char *err_strerr[] = {
@@ -41,8 +40,11 @@ static const char *err_strerr[] = {
   "Connection aborted.",    /* ERR_ABRT       -13 */
   "Connection reset.",      /* ERR_RST        -14 */
   "Connection closed.",     /* ERR_CLSD       -15 */
-  "Illegal argument."       /* ERR_ARG        -16 */
+  "Illegal argument.",      /* ERR_ARG        -16 */
+  "Unknown error."          /* ERR_UNKN       -17 */
 };
+
+#define ERR_UNKN 17
 
 /**
  * Convert an lwip internal error to a string representation.
@@ -53,33 +55,14 @@ static const char *err_strerr[] = {
 const char *
 lwip_strerr(err_t err)
 {
-  if ((err > 0) || (-err >= (err_t)LWIP_ARRAYSIZE(err_strerr))) {
-    return "Unknown error.";
-  }
+  if ((err > 0) || (-err >= (err_t)LWIP_ARRAYSIZE(err_strerr))) return err_strerr[-ERR_UNKN];
   return err_strerr[-err];
 }
-
-static void
-calculate_checksum(struct pbuf *p)
-{
-    char *data_str = (char *)data;
-    pbuf_copy_partial(p, (void *)data, p->tot_len, 0);
-
-    uint32_t checksum = 0;
-    for (int i = 0; i < p->tot_len; i++) {
-        checksum += data_str[i];
-    }
-}
-
 
 static void lwip_udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
     err_t error = udp_sendto(pcb, p, addr, port);
-    if (error) {
-        print("Failed to send UDP packet through socket: ");
-        print(lwip_strerr(error));
-        putC('\n');
-    }
+    if (error) printf("Failed to send UDP packet through socket: %s\n", lwip_strerr(error));
     pbuf_free(p);
 }
 
@@ -87,16 +70,15 @@ int setup_udp_socket(void)
 {
     udp_socket = udp_new_ip_type(IPADDR_TYPE_V4);
     if (udp_socket == NULL) {
-        print("Failed to open a UDP socket");
+        printf("Failed to open a UDP socket\n");
         return -1;
     }
 
     int error = udp_bind(udp_socket, IP_ANY_TYPE, UDP_ECHO_PORT);
     if (error == ERR_OK) {
-        //print("UDP echo port bound to 1235\n");
         udp_recv(udp_socket, lwip_udp_recv_callback, udp_socket);
     } else {
-        print("Failed to bind the UDP socket");
+        print("Failed to bind the UDP socket\n");
         return -1;
     }
 

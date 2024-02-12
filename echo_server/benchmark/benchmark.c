@@ -68,13 +68,13 @@ sel4cp_benchmark_start(void)
 {
     seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
     seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_ETH_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_MUX_RX_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_MUX_TX_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_COPY_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_COPY1_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_MUX_RX_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_MUX_TX_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_COPY_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_COPY1_ID);
     seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_LWIP_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_LWIP1_ID);
-    seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_ARP_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_LWIP1_ID);
+    // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_ARP_ID);
     seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_TIMER_ID);
     seL4_BenchmarkResetLog();
 }
@@ -239,26 +239,26 @@ void notified(sel4cp_channel ch)
             sel4cp_benchmark_stop_tcb(PD_ETH_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_ETH_ID, kernel, entries, number_schedules, total);
 
-            sel4cp_benchmark_stop_tcb(PD_MUX_RX_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_MUX_RX_ID, kernel, entries, number_schedules, total);
+            // sel4cp_benchmark_stop_tcb(PD_MUX_RX_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_MUX_RX_ID, kernel, entries, number_schedules, total);
 
-            sel4cp_benchmark_stop_tcb(PD_MUX_TX_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_MUX_TX_ID, kernel, entries, number_schedules, total);
+            // sel4cp_benchmark_stop_tcb(PD_MUX_TX_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_MUX_TX_ID, kernel, entries, number_schedules, total);
 
-            sel4cp_benchmark_stop_tcb(PD_COPY_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_COPY_ID, kernel, entries, number_schedules, total);
+            // sel4cp_benchmark_stop_tcb(PD_COPY_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_COPY_ID, kernel, entries, number_schedules, total);
 
-            sel4cp_benchmark_stop_tcb(PD_COPY1_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_COPY1_ID, kernel, entries, number_schedules, total);
+            // sel4cp_benchmark_stop_tcb(PD_COPY1_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_COPY1_ID, kernel, entries, number_schedules, total);
 
             sel4cp_benchmark_stop_tcb(PD_LWIP_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_LWIP_ID, kernel, entries, number_schedules, total);
-            
-            sel4cp_benchmark_stop_tcb(PD_LWIP1_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_LWIP1_ID, kernel, entries, number_schedules, total);
 
-            sel4cp_benchmark_stop_tcb(PD_ARP_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_ARP_ID, kernel, entries, number_schedules, total);
+            // sel4cp_benchmark_stop_tcb(PD_LWIP1_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_LWIP1_ID, kernel, entries, number_schedules, total);
+
+            // sel4cp_benchmark_stop_tcb(PD_ARP_ID, &total, &number_schedules, &kernel, &entries);
+            // print_benchmark_details(PD_ARP_ID, kernel, entries, number_schedules, total);
 
             sel4cp_benchmark_stop_tcb(PD_TIMER_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_TIMER_ID, kernel, entries, number_schedules, total);
