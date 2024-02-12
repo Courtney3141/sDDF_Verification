@@ -11,7 +11,7 @@
 /* Notification and PPC channels - ensure these align with .system file! */
 #define DRIVER_CH 3
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 #define ETHER_MTU 1500
 
@@ -28,7 +28,6 @@ uintptr_t rx_used_arp;
 /* Buffer data regions */
 uintptr_t buffer_data_vaddr;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 typedef struct state {
@@ -39,7 +38,7 @@ typedef struct state {
 
 state_t state;
 
-/* CDTODO: Boolean to indicate whether a packet has been enqueued into the driver's free ring during notification handling */
+/* Boolean to indicate whether a packet has been enqueued into the driver's free ring during notification handling */
 static bool notify_drv;
 
 /* Return the client ID if the Mac address is a match. */
@@ -57,7 +56,7 @@ int get_client(struct eth_hdr * buffer)
 void rx_return(void)
 {
     bool reprocess = true;
-    bool notify_clients[NUM_CLIENTS];
+    bool notify_clients[NUM_CLIENTS] = {false};
     while (reprocess) {
         while (!ring_empty(state.rx_ring_drv.used_ring)) {
             buff_desc_t buffer;
@@ -136,7 +135,7 @@ void notified(sel4cp_channel ch)
 
 void init(void)
 {
-    /* CDTODO: Please no hardcoded client numbers and mac addresses! */
+    /* CDTODO: Extract from system later */
     state.mac_addrs[0][0] = 0x52;
     state.mac_addrs[0][1] = 0x54;
     state.mac_addrs[0][2] = 0x1;

@@ -7,7 +7,7 @@
 #define ARP 2
 #define DRIVER 3
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 
 /* Ring buffer regions */
@@ -20,7 +20,6 @@ uintptr_t tx_used_cli1;
 uintptr_t tx_free_arp;
 uintptr_t tx_used_arp;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 typedef struct state {
@@ -33,7 +32,7 @@ state_t state;
 
 void tx_provide(void)
 {
-    bool enqueued;
+    bool enqueued = false;
     for (int i = 0; i < NUM_CLIENTS; i++) {
         int client = state.client_priority_order[i];
         bool reprocess = true;
@@ -68,7 +67,7 @@ void tx_provide(void)
 void tx_return(void)
 {
     bool reprocess = true;
-    bool notify_clients[NUM_CLIENTS];
+    bool notify_clients[NUM_CLIENTS] = {false};
     while (reprocess) {
         while (!ring_empty(state.tx_ring_drv.free_ring)) {
             buff_desc_t buffer;

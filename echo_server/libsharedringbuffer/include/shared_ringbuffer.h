@@ -13,11 +13,9 @@
 #include "util.h"
 #include "fence.h"
 
-/* CDTODO: Where is the best place for this? */
+/* CDTODO: Extract from system later. Ring buffers should bave configurable places per buffer... */
 #define BUF_SIZE 2048
 #define NUM_BUFFERS 512
-
-/* CDTODO: Make this proper ifdef */
 #define MULTICORE 0
 
 /* Buffer descriptor */

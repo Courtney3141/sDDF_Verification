@@ -40,10 +40,9 @@ uintptr_t tx_used;
 uintptr_t rx_buffer_data_region;
 uintptr_t tx_buffer_data_region;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
-/* CDTODO: Booleans to indicate whether packets have been enqueued during notification handling */
+/* Booleans to indicate whether packets have been enqueued during notification handling */
 static bool notify_tx;
 static bool notify_rx;
 
@@ -223,7 +222,6 @@ void receive(void)
             assert(!err); */
 
             struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
-
             if (state.netif.input(p, &state.netif) != ERR_OK) {
                 printf("LWIP|ERROR: unkown error inputting pbuf into network stack\n");
                 pbuf_free(p);
@@ -279,7 +277,7 @@ static void netif_status_callback(struct netif *netif)
 
 static void get_mac(void)
 {
-    /* CDTODO: No more hardcoded MACs please! */
+    /* CDTODO: Extract from system later */
     state.mac[0] = 0x52;
     state.mac[1] = 0x54;
     state.mac[2] = 0x1;

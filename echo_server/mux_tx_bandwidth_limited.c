@@ -10,7 +10,7 @@
 #define DRIVER 3
 #define TIMER_CH 4
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 
 /* Ring buffer regions */
@@ -23,7 +23,6 @@ uintptr_t tx_used_cli1;
 uintptr_t tx_free_arp;
 uintptr_t tx_used_arp;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 /* Timing configuration */
@@ -62,8 +61,8 @@ static void set_timeout(uint64_t timeout)
 
 void tx_provide(void)
 {
-    bool enqueued;
-    bool notify_driver;
+    bool enqueued = false;
+    bool notify_driver = false;
     uint64_t curr_time = get_time();
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (curr_time - state.client_usage[client].last_time >= TIME_WINDOW) {
@@ -103,7 +102,7 @@ void tx_provide(void)
 void tx_return(void)
 {
     bool reprocess = true;
-    bool notify_clients[NUM_CLIENTS];
+    bool notify_clients[NUM_CLIENTS] = {false};
     while (reprocess) {
         while (!ring_empty(state.tx_ring_drv.free_ring)) {
             buff_desc_t buffer;

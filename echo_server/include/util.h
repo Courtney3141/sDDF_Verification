@@ -86,7 +86,7 @@ static void _assert_fail(const char  *assertion, const char  *file, unsigned int
     while (1) {}
 }
 
-/* CDTODO: From here will be included into a netowrk util header */
+/* CDTODO: From here will be included in a separate library */
 
 #include "printf.h"
 #include "cc.h"

@@ -51,8 +51,7 @@ static uint64_t current_timeout;
 static uint8_t pending_timeouts;
 
 
-static uint64_t
-get_ticks(void) 
+static uint64_t get_ticks(void) 
 {
     uint64_t overflow = overflow_count;
     uint32_t sr1 = gpt[SR];
@@ -66,8 +65,7 @@ get_ticks(void)
     return (overflow << 32) | cnt;
 }
 
-void
-irq(sel4cp_channel ch)
+void irq(sel4cp_channel ch)
 {
     uint32_t sr = gpt[SR];
     gpt[SR] = sr;
@@ -112,8 +110,7 @@ irq(sel4cp_channel ch)
     }
 }
 
-void
-notified(sel4cp_channel ch)
+void notified(sel4cp_channel ch)
 {
     if (ch == IRQ_CH) {
         irq(ch);
@@ -121,8 +118,7 @@ notified(sel4cp_channel ch)
     }
 }
 
-seL4_MessageInfo_t
-protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
+seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
 {
     uint64_t rel_timeout, cur_ticks, abs_timeout;
     switch (sel4cp_msginfo_get_label(msginfo)) {
@@ -161,8 +157,7 @@ protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
     return sel4cp_msginfo_new(0, 0);
 }
 
-void
-init(void)
+void init(void)
 {
     gpt = (volatile uint32_t *) gpt_regs;
 

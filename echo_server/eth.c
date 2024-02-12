@@ -17,10 +17,10 @@
 #define TX_CH  1
 #define RX_CH  2
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 
-/* CDTODO: How should this work... */
+/* CDTODO: Improve this */
 uintptr_t phys_address_regions[NUM_CLIENTS];
 
 /* HW ring buffer regions */
@@ -35,7 +35,7 @@ uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
 
-/* Buffer data regions vaddr CDTODO: Remove these with build flags */
+/* Buffer data regions vaddr */
 uintptr_t rx_buffer_data_region_vaddr;
 uintptr_t tx_buffer_data_region_arp_vaddr;
 uintptr_t tx_buffer_data_region_cli0_vaddr;
@@ -47,7 +47,6 @@ uintptr_t tx_buffer_data_region_arp_paddr;
 uintptr_t tx_buffer_data_region_cli0_paddr;
 uintptr_t tx_buffer_data_region_cli1_paddr;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 /* Packet configuration */
@@ -192,7 +191,7 @@ static void rx_return(void)
         return;
     }
 
-    bool packets_transferred;
+    bool packets_transferred = false;
     while (!hw_ring_empty(&rx) && !ring_full(rx_ring.used_ring)) {
         /* If buffer slot is still empty, we have processed all packets the device has filled */
         volatile struct descriptor *d = &(rx.descr[rx.tail]);
@@ -251,7 +250,7 @@ static void tx_provide(void)
 
 static void tx_return(void)
 {
-    bool enqueued;
+    bool enqueued = false;
     while (!hw_ring_empty(&tx) && !ring_full(tx_ring.free_ring)) {
         /* Ensure that this buffer has been sent by the device */
         volatile struct descriptor *d = &(tx.descr[tx.tail]);

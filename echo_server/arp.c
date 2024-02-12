@@ -15,7 +15,7 @@
 /* PPC message labels */
 #define REG_IP 0
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 2
 
 /* Network configuration */
@@ -38,7 +38,6 @@ uintptr_t tx_used;
 uintptr_t rx_buffer_data_region;
 uintptr_t tx_buffer_data_region;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 /* Client network configuration */
@@ -117,7 +116,7 @@ static int arp_reply(const uint8_t ethsrc_addr[ETH_HWADDR_LEN],
 
 void receive(void)
 {
-    bool transmitted;
+    bool transmitted = false;
     bool reprocess = true;
     while (reprocess) {
         while (!ring_empty(rx_ring.used_ring) && !ring_full(rx_ring.free_ring)) {
@@ -211,7 +210,7 @@ void init(void)
 
     buffers_init((ring_buffer_t *)tx_free, 0, NUM_BUFFERS, BUF_SIZE);
 
-    /* CDTODO: Standardise this. Set up hardcoded mac addresses */
+    /* CDTODO: Extract from system later */
     mac_addrs[0][0] = 0x52;
     mac_addrs[0][1] = 0x54;
     mac_addrs[0][2] = 0x1;

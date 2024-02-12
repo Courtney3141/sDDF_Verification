@@ -55,7 +55,6 @@ void notified(sel4cp_channel ch)
 {
     switch(ch) {
         case INIT:
-            // init is complete so we can start counting.
             count_idle();
             break;
         default:

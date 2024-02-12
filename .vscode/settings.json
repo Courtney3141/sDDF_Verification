@@ -4,5 +4,6 @@
         "ip_addr.h": "c",
         "string.h": "c",
         "tcp.h": "c"
-    }
+    },
+    "cmake.configureOnOpen": false
 }

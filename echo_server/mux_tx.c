@@ -7,7 +7,7 @@
 #define ARP 2
 #define DRIVER 3
 
-/* CDTODO: Remove later or figure out a standardised way of configuring this */
+/* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 
 /* Ring buffer regions */
@@ -20,7 +20,6 @@ uintptr_t tx_used_cli1;
 uintptr_t tx_free_arp;
 uintptr_t tx_used_arp;
 
-/* CDTODO: Why is this here? */
 uintptr_t uart_base;
 
 typedef struct state {
@@ -32,7 +31,7 @@ state_t state;
 
 void tx_provide(void)
 {
-    bool enqueued;
+    bool enqueued = false;
     for (int client = 0; client < NUM_CLIENTS; client++) {
         bool reprocess = true;
         while (reprocess) {
@@ -71,47 +70,10 @@ void tx_provide(void)
     }
 }
 
-/* CDTODO: Benchmark this and ensure it's not faster than original */
-void tx_provide_alternate(void)
-{
-    bool reprocess = true;
-    bool enqueued;
-    while (reprocess) {
-        for (int client = 0; client < NUM_CLIENTS; client++) {
-            while (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
-                buff_desc_t buffer;
-                int err __attribute__((unused)) = dequeue_used(&state.tx_ring_clients[client], &buffer);
-                assert(!err);
-
-                buffer.dma_region_id = client;
-                err = enqueue_used(&state.tx_ring_drv, buffer);
-                assert(!err);
-                enqueued = true;
-            }
-        }
-
-        for (int client = 0; client < NUM_CLIENTS; client++) request_signal(state.tx_ring_clients[client].used_ring);
-        reprocess = false;
-
-        bool clients_empty = true;
-        for (int client = 0; client < NUM_CLIENTS; client++) clients_empty &= ring_empty(state.tx_ring_clients[client].used_ring);
-
-        if (!clients_empty && !ring_full(state.tx_ring_drv.used_ring)) {
-            for (int client = 0; client < NUM_CLIENTS; client++) cancel_signal(state.tx_ring_clients[client].used_ring);
-            reprocess = true;
-        }
-    }
-
-    if (enqueued && require_signal(state.tx_ring_drv.used_ring)) {
-        cancel_signal(state.tx_ring_drv.used_ring);
-        sel4cp_notify_delayed(DRIVER);
-    }
-}
-
 void tx_return(void)
 {
     bool reprocess = true;
-    bool notify_clients[NUM_CLIENTS];
+    bool notify_clients[NUM_CLIENTS] = {false};
     while (reprocess) {
         while (!ring_empty(state.tx_ring_drv.free_ring)) {
             buff_desc_t buffer;
