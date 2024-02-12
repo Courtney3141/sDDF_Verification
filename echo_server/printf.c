@@ -32,7 +32,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <sel4cp.h>
+#include <microkit.h>
 
 #include "printf.h"
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <system>
-    <memory_region name="uart" size="0x10_000" phys_addr="0x30890000" />
+    <memory_region name="uart" size="0x10_000" phys_addr="0x30860000" />
     <memory_region name="eth0" size="0x10_000" phys_addr="0x30be0000" />
     <memory_region name="timer" size="0x10_000" phys_addr="0x302d0000" />
 
@@ -20,6 +20,8 @@
     <memory_region name="tx_used" size="0x200_000" page_size="0x200_000"/>
 
     <!-- shared memory for benchmarking -->
+    <memory_region name="tcp_recv_buffer" size="0x1000000"/>
+
     <memory_region name="cyclecounters" size="0x1000"/>
 
     <protection_domain name="benchIdle" priority="1" >
@@ -72,6 +74,8 @@
 
             <!-- shared memory used for benchmarking -->
             <map mr="cyclecounters" vaddr="0x5_010_000" perms="rw" cached="true" setvar_vaddr="cyclecounters_vaddr" />
+
+            <map mr="tcp_recv_buffer" vaddr="0x5_011_000" perms="rw" cached="true" setvar_vaddr="tcp_recv_buffer" />
         </protection_domain>
 
         <protection_domain name="timer" priority="101" pp="true" id="9" passive="true">

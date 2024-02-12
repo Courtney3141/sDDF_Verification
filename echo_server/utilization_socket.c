@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4cp.h>
+#include <microkit.h>
 #include <string.h>
 
 #include "lwip/ip.h"
@@ -143,13 +143,13 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         error = tcp_write(pcb, OK, strlen(OK), TCP_WRITE_FLAG_COPY);
         if (error) printf("Failed to send OK message through utilization peer\n");
     } else if (msg_match(data_packet_str, START)) {
-        printf("%s measurement starting... \n", sel4cp_name);
+        printf("%s measurement starting... \n", microkit_name);
         start = bench->ts;
         idle_ccount_start = bench->ccount;
         idle_overflow_start = bench->overflows;
-        sel4cp_notify(START_PMU);
+        microkit_notify(START_PMU);
     } else if (msg_match(data_packet_str, STOP)) {
-        printf("%s measurement finished \n", sel4cp_name);
+        printf("%s measurement finished \n", microkit_name);
 
         uint64_t total = 0, idle = 0;
         total = bench->ts - start;
@@ -176,7 +176,7 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         
         error = tcp_write(pcb, buffer, strlen(buffer) + 1, TCP_WRITE_FLAG_COPY);
         tcp_shutdown(pcb, 0, 1);
-        sel4cp_notify(STOP_PMU);
+        microkit_notify(STOP_PMU);
     } else if (msg_match(data_packet_str, QUIT)) {
         /* Do nothing for now */
     } else {

@@ -4,22 +4,22 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-# @ivanv: Changes any of the params given e.g SEL4CP_CONFIG,
+# @ivanv: Changes any of the params given e.g microkit_CONFIG,
 # doesn't actually cause a re-compile. We should fix this.
 ifeq ($(strip $(BUILD_DIR)),)
 $(error BUILD_DIR must be specified)
 endif
 
-ifeq ($(strip $(SEL4CP_SDK)),)
-$(error SEL4CP_SDK must be specified)
+ifeq ($(strip $(microkit_SDK)),)
+$(error microkit_SDK must be specified)
 endif
 
-ifeq ($(strip $(SEL4CP_BOARD)),)
-$(error SEL4CP_BOARD must be specified)
+ifeq ($(strip $(microkit_BOARD)),)
+$(error microkit_BOARD must be specified)
 endif
 
-ifeq ($(strip $(SEL4CP_CONFIG)),)
-$(error SEL4CP_CONFIG must be specified)
+ifeq ($(strip $(microkit_CONFIG)),)
+$(error microkit_CONFIG must be specified)
 endif
 
 ifeq ($(strip $(TOOLCHAIN)),)
@@ -31,19 +31,19 @@ CPU := cortex-a53
 CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
 AS := $(TOOLCHAIN)-as
-SEL4CP_TOOL ?= $(SEL4CP_SDK)/bin/sel4cp
+microkit_TOOL ?= $(microkit_SDK)/bin/microkit
 
 LWIPDIR=lwip/src
 BENCHDIR=benchmark
 RINGBUFFERDIR=libsharedringbuffer
 
-BOARD_DIR := $(SEL4CP_SDK)/board/$(SEL4CP_BOARD)/$(SEL4CP_CONFIG)
+BOARD_DIR := $(microkit_SDK)/board/$(microkit_BOARD)/$(microkit_CONFIG)
 
 IMAGES := eth.elf lwip.elf benchmark.elf idle.elf timer.elf
 CFLAGS := -mcpu=$(CPU) -mstrict-align -ffreestanding -g3 -O3 -Wall -Wno-unused-function -DNO_ASSERT
 
 LDFLAGS := -L$(BOARD_DIR)/lib -L.
-LIBS := -lsel4cp -Tsel4cp.ld -lc
+LIBS := -lmicrokit -Tmicrokit.ld -lc
 
 IMAGE_FILE = $(BUILD_DIR)/loader.img
 REPORT_FILE = $(BUILD_DIR)/report.txt
@@ -94,7 +94,7 @@ NETIFFILES=$(LWIPDIR)/netif/ethernet.c
 
 # LWIPFILES: All the above.
 LWIPFILES=lwip.c lwip_timer.c cache.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
-LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o printf.o
+LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o tcp_echo_socket.o utilization_socket.o udp_echo_socket.o printf.o
 
 ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o printf.o
 BENCH_OBJS := benchmark/benchmark.o
@@ -132,7 +132,7 @@ $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) eth.system
-	$(SEL4CP_TOOL) eth.system --search-path $(BUILD_DIR) --board $(SEL4CP_BOARD) --config $(SEL4CP_CONFIG) -o $(IMAGE_FILE) -r $(REPORT_FILE)
+	$(microkit_TOOL) eth.system --search-path $(BUILD_DIR) --board $(microkit_BOARD) --config $(microkit_CONFIG) -o $(IMAGE_FILE) -r $(REPORT_FILE)
 
 .PHONY: all compile clean
 
