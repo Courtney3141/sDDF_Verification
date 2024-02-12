@@ -3,7 +3,8 @@
         "shared_ringbuffer.h": "c",
         "ip_addr.h": "c",
         "string.h": "c",
-        "tcp.h": "c"
+        "tcp.h": "c",
+        "util.h": "c"
     },
     "cmake.configureOnOpen": false
 }
