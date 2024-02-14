@@ -153,7 +153,7 @@ static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
         return ERR_MEM;
     }
 
-    if (ring_full(state.tx_ring.used_ring)) {
+    if (ring_full(state.tx_ring.used_ring) || ring_empty(state.tx_ring.free_ring)) {
         enqueue_pbufs(p);
         return ERR_OK;
     }
