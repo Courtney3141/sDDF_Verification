@@ -87,7 +87,7 @@ static void interface_free_buffer(struct pbuf *p)
     SYS_ARCH_DECL_PROTECT(old_level);
     pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
-    buff_desc_t buffer = {custom_pbuf_offset->offset, 0, 0, NULL};
+    buff_desc_t buffer = {{custom_pbuf_offset->offset}, 0, NULL};
     /* CDTODO: No obvious way to ensure that the free ring is not full before this function is called... */
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
@@ -169,8 +169,6 @@ static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
         copied += curr->len;
     }
 
-    cleanCache((unsigned long) frame, (unsigned long) frame + copied);
-
     buffer.len = copied;
     err = enqueue_used(&(state.tx_ring), buffer);
     assert(!err);
@@ -215,11 +213,6 @@ void receive(void)
             buff_desc_t buffer;
             int err __attribute__((unused)) = dequeue_used(&state.rx_ring, &buffer);
             assert(!err);
-
-            /* If client is communicating directly with driver, cache of this buffer must be invalidated 
-            err = seL4_ARM_VSpace_Invalidate_Data(3, buffer.offset + rx_buffer_data_region, buffer.offset + rx_buffer_data_region + buffer.len);
-            if (err) printf("LWIP|ERROR: ARM Vspace invalidate failed with err %d\n", err);
-            assert(!err); */
 
             struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
             if (state.netif.input(p, &state.netif) != ERR_OK) {
@@ -341,12 +334,10 @@ void init(void)
     }
 
     if (notify_tx && require_signal(state.tx_ring.used_ring)) {
+        cancel_signal(state.tx_ring.used_ring);
         notify_tx = false;
-        if (!have_signal) {
-            sel4cp_notify_delayed(TX_CH);
-        } else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) {
-            sel4cp_notify(TX_CH);
-        }
+        if (!have_signal) sel4cp_notify_delayed(TX_CH);
+        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) sel4cp_notify(TX_CH);
     }
 }
 

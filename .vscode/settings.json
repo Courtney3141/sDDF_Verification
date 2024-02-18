@@ -4,7 +4,8 @@
         "ip_addr.h": "c",
         "string.h": "c",
         "tcp.h": "c",
-        "util.h": "c"
+        "util.h": "c",
+        "etharp.h": "c"
     },
     "cmake.configureOnOpen": false
 }

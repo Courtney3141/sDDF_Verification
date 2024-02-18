@@ -105,8 +105,6 @@ static int arp_reply(const uint8_t ethsrc_addr[ETH_HWADDR_LEN],
     reply->ipdst_addr = ipdst_addr;
     memset(&reply->padding, 0, 10);
 
-    cleanCache((uintptr_t)reply, (uintptr_t)reply + 64);
-
     buffer.len = 56;
     err = enqueue_used(&tx_ring, buffer);
     assert(!err);

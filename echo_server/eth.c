@@ -20,9 +20,6 @@
 /* CDTODO: Extract from system later */
 #define NUM_CLIENTS 3
 
-/* CDTODO: Improve this */
-uintptr_t phys_address_regions[NUM_CLIENTS];
-
 /* HW ring buffer regions */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -34,18 +31,6 @@ uintptr_t rx_free;
 uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
-
-/* Buffer data regions vaddr */
-uintptr_t rx_buffer_data_region_vaddr;
-uintptr_t tx_buffer_data_region_arp_vaddr;
-uintptr_t tx_buffer_data_region_cli0_vaddr;
-uintptr_t tx_buffer_data_region_cli1_vaddr;
-
-/* Buffer data regions */
-uintptr_t rx_buffer_data_region_paddr;
-uintptr_t tx_buffer_data_region_arp_paddr;
-uintptr_t tx_buffer_data_region_cli0_paddr;
-uintptr_t tx_buffer_data_region_cli1_paddr;
 
 uintptr_t uart_base;
 
@@ -155,7 +140,7 @@ static void rx_provide(void)
             uint16_t stat = RXD_EMPTY;
             if (rx.head + 1 == rx.size) stat |= WRAP;
             rx.descr_mdata[rx.head] = buffer;
-            update_ring_slot(&rx, rx.head, buffer.offset + rx_buffer_data_region_paddr, 0, stat);
+            update_ring_slot(&rx, rx.head, buffer.phys, 0, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -225,12 +210,10 @@ static void tx_provide(void)
             int err __attribute__((unused)) = dequeue_used(&tx_ring, &buffer);
             assert(!err);
 
-            uintptr_t phys = buffer.offset + phys_address_regions[buffer.dma_region_id];
-        
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
             if (tx.head + 1 == tx.size) stat |= WRAP;
             tx.descr_mdata[tx.head] = buffer;
-            update_ring_slot(&tx, tx.head, phys, buffer.len, stat);
+            update_ring_slot(&tx, tx.head, buffer.phys, buffer.len, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -379,11 +362,6 @@ void init(void)
     ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
 
-    buffers_init((ring_buffer_t *)rx_free, 0, NUM_BUFFERS, BUF_SIZE);
-
-    phys_address_regions[0] = tx_buffer_data_region_cli0_paddr;
-    phys_address_regions[1] = tx_buffer_data_region_cli1_paddr;
-    phys_address_regions[2] = tx_buffer_data_region_arp_paddr;
 
     rx_provide();
     tx_provide();

@@ -20,9 +20,11 @@
 
 /* Buffer descriptor */
 typedef struct buff_desc {
-    uintptr_t offset;                                               /* offset of buffer within buffer memory region */
+    union {
+       uintptr_t offset;                                            /* offset of buffer within buffer memory region */
+       uintptr_t phys;                                              /* physical address of buffer */
+    };
     uint16_t len;                                                   /* length of data inside buffer */
-    uint32_t dma_region_id;                                         /* dma region identifier to indicate the memory region of the buffer */
     void *cookie;                                                   /* associated metadata */
 } buff_desc_t;
 
@@ -182,14 +184,14 @@ void ring_init(ring_handle_t *ring, ring_buffer_t *free, ring_buffer_t *used, ui
  * Initialise the free ring by filling with all available ring buffers.
  *
  * @param free_ring ring buffer to fill.
- * @param dma_region_id DMA region these buffers belong to. Set by multiplexer, used by driver. Clients set to 0.
+ * @param base_addr start of the memory region the offsets are applied to (only used between mux and driver)
  * @param ring_size size of the ring buffer.
  * @param buffer_size size of the buffers being enqueued.
  */
-static inline void buffers_init(ring_buffer_t *free_ring, uint32_t dma_region_id, uint32_t ring_size, uint32_t buffer_size)
+static inline void buffers_init(ring_buffer_t *free_ring, uintptr_t base_addr, uint32_t ring_size, uint32_t buffer_size)
 {
     for (int i = 0; i < ring_size - 1; i++) {
-        buff_desc_t buffer = {(buffer_size * i), 0, dma_region_id, NULL};
+        buff_desc_t buffer = {{(buffer_size * i) + base_addr}, 0, NULL};
         int err __attribute__((unused)) = enqueue(free_ring, buffer);
         assert(!err);
     }
