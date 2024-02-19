@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -197,7 +197,7 @@ static void rx_return(void)
 
     if (packets_transferred && require_signal(rx_ring.used_ring)) {
         cancel_signal(rx_ring.used_ring);
-        sel4cp_notify(RX_CH);
+        microkit_notify(RX_CH);
     }
 }
 
@@ -253,7 +253,7 @@ static void tx_return(void)
 
     if (enqueued && require_signal(tx_ring.free_ring)) {
         cancel_signal(tx_ring.free_ring);
-        sel4cp_notify(TX_CH);
+        microkit_notify(TX_CH);
     }
 }
 
@@ -367,16 +367,16 @@ void init(void)
     tx_provide();
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     switch(ch) {
         case IRQ_CH:
             handle_irq();
             /*
              * Delay calling into the kernel to ack the IRQ until the next loop
-             * in the seL4CP event handler loop.
+             * in the microkit event handler loop.
              */
-            sel4cp_irq_ack_delayed(ch);
+            microkit_irq_ack_delayed(ch);
             break;
         case RX_CH:
             rx_provide();

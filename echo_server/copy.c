@@ -80,16 +80,16 @@ void rx_return(void)
 
     if (enqueued && require_signal(rx_ring_cli.used_ring)) {
         cancel_signal(rx_ring_cli.used_ring);
-        sel4cp_notify(CLIENT_CH);
+        microkit_notify(CLIENT_CH);
     }
 
     if (enqueued && require_signal(rx_ring_mux.free_ring)) {
         cancel_signal(rx_ring_mux.free_ring);
-        sel4cp_notify_delayed(MUX_RX_CH);
+        microkit_notify_delayed(MUX_RX_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     rx_return();
 }

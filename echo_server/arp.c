@@ -156,26 +156,26 @@ void receive(void)
 
     if (transmitted && require_signal(tx_ring.used_ring)) {
         cancel_signal(tx_ring.used_ring);
-        sel4cp_notify_delayed(TX_CH);
+        microkit_notify_delayed(TX_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     receive();
 }
 
-seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
+seL4_MessageInfo_t protected(microkit_channel ch, microkit_msginfo msginfo)
 {
     int client = ch - CLIENT_CH;
     if (client >= NUM_CLIENTS || client < 0) {
         printf("ARP|LOG: PPC from unkown client: %d\n", client);
-        return sel4cp_msginfo_new(0, 0);
+        return microkit_msginfo_new(0, 0);
     }
 
-    uint32_t ip_addr = sel4cp_mr_get(0);
-    uint32_t mac_lower = sel4cp_mr_get(1);
-    uint32_t mac_higher = sel4cp_mr_get(2);
+    uint32_t ip_addr = microkit_mr_get(0);
+    uint32_t mac_lower = microkit_mr_get(1);
+    uint32_t mac_higher = microkit_mr_get(2);
 
     uint8_t mac[8];
     mac[0] = mac_lower >> 24;
@@ -186,7 +186,7 @@ seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
     mac[5] = mac_higher >> 16 & 0xff;
     char buf[16];
 
-    switch (sel4cp_msginfo_get_label(msginfo)) {
+    switch (microkit_msginfo_get_label(msginfo)) {
         case REG_IP:
             printf("ARP|NOTICE: client%d registering ip address: %s with MAC: ", client, ipaddr_to_string(ip_addr, buf, 16));
             dump_mac(mac);
@@ -198,7 +198,7 @@ seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
             break;
     }
 
-    return sel4cp_msginfo_new(0, 0);
+    return microkit_msginfo_new(0, 0);
 }
 
 void init(void)

@@ -1,4 +1,4 @@
-#include <sel4cp.h>
+#include <microkit.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -94,7 +94,7 @@ void rx_return(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client] && require_signal(state.rx_ring_clients[client].used_ring)) {
             cancel_signal(state.rx_ring_clients[client].used_ring);
-                        sel4cp_notify(client);
+                        microkit_notify(client);
         }
     }    
 }
@@ -127,11 +127,11 @@ void rx_provide(void)
 
     if (notify_drv && require_signal(state.rx_ring_drv.free_ring)) {
         cancel_signal(state.rx_ring_drv.free_ring);
-        sel4cp_notify_delayed(DRIVER_CH);
+        microkit_notify_delayed(DRIVER_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     rx_return();
     rx_provide();
@@ -170,6 +170,6 @@ void init(void)
 
     if (require_signal(state.rx_ring_drv.free_ring)) {
         cancel_signal(state.rx_ring_drv.free_ring);
-        sel4cp_notify_delayed(DRIVER_CH);
+        microkit_notify_delayed(DRIVER_CH);
     }
 }
