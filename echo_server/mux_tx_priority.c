@@ -45,7 +45,7 @@ state_t state;
 int extract_offset(uintptr_t phys, uintptr_t *offset) {
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (phys >= buffer_region_paddrs[client] && phys < buffer_region_paddrs[client] + NUM_BUFFERS * BUF_SIZE) {
-            *offset = phys - *offset;
+            *offset = phys - buffer_region_paddrs[client];
             return client;
         }
     }
