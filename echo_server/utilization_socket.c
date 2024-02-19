@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4cp.h>
+#include <microkit.h>
 #include <string.h>
 
 #include "lwip/ip.h"
@@ -143,18 +143,37 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         error = tcp_write(pcb, OK, strlen(OK), TCP_WRITE_FLAG_COPY);
         if (error) printf("Failed to send OK message through utilization peer\n");
     } else if (msg_match(data_packet_str, START)) {
+<<<<<<< HEAD
         printf("%s measurement starting... \n", sel4cp_name);
         start = bench->ts;
         idle_ccount_start = bench->ccount;
         idle_overflow_start = bench->overflows;
         sel4cp_notify(START_PMU);
+=======
+        printf("%s measurement starting... \n", microkit_name);
+        if (!strcmp(microkit_name, "client0")) {
+            start = bench->ts;
+            idle_ccount_start = bench->ccount;
+            idle_overflow_start = bench->overflows;
+            microkit_notify(START_PMU);
+        }
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
     } else if (msg_match(data_packet_str, STOP)) {
-        printf("%s measurement finished \n", sel4cp_name);
+        printf("%s measurement finished \n", microkit_name);
 
         uint64_t total = 0, idle = 0;
+<<<<<<< HEAD
         total = bench->ts - start;
         total += ULONG_MAX * (bench->overflows - idle_overflow_start);
         idle = bench->ccount - idle_ccount_start;
+=======
+
+        if (!strcmp(microkit_name, "client0")) {
+            total = bench->ts - start;
+            total += ULONG_MAX * (bench->overflows - idle_overflow_start);
+            idle = bench->ccount - idle_ccount_start;
+        }
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 
         char tbuf[21];
         my_itoa(total, tbuf);
@@ -176,7 +195,12 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         
         error = tcp_write(pcb, buffer, strlen(buffer) + 1, TCP_WRITE_FLAG_COPY);
         tcp_shutdown(pcb, 0, 1);
+<<<<<<< HEAD
         sel4cp_notify(STOP_PMU);
+=======
+
+        if (!strcmp(microkit_name, "client0")) microkit_notify(STOP_PMU);
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
     } else if (msg_match(data_packet_str, QUIT)) {
         /* Do nothing for now */
     } else {

@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <sel4cp.h>
+#include <microkit.h>
 
 #include "lwip/dhcp.h"
 #include "lwip/init.h"
@@ -87,7 +87,7 @@ static void interface_free_buffer(struct pbuf *p)
     SYS_ARCH_DECL_PROTECT(old_level);
     pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
-    buff_desc_t buffer = {custom_pbuf_offset->offset, 0, 0, NULL};
+    buff_desc_t buffer = {{custom_pbuf_offset->offset}, 0, NULL};
     /* CDTODO: No obvious way to ensure that the free ring is not full before this function is called... */
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
@@ -169,8 +169,6 @@ static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
         copied += curr->len;
     }
 
-    cleanCache((unsigned long) frame, (unsigned long) frame + copied);
-
     buffer.len = copied;
     err = enqueue_used(&(state.tx_ring), buffer);
     assert(!err);
@@ -216,11 +214,14 @@ void receive(void)
             int err __attribute__((unused)) = dequeue_used(&state.rx_ring, &buffer);
             assert(!err);
 
+<<<<<<< HEAD
             /* If client is communicating directly with driver, cache of this buffer must be invalidated */ 
             err = seL4_ARM_VSpace_Invalidate_Data(3, buffer.offset + rx_buffer_data_region, buffer.offset + rx_buffer_data_region + buffer.len);
             if (err) printf("LWIP|ERROR: ARM Vspace invalidate failed with err %d\n", err);
             assert(!err);
 
+=======
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
             struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
             if (state.netif.input(p, &state.netif) != ERR_OK) {
                 printf("LWIP|ERROR: unkown error inputting pbuf into network stack\n");
@@ -264,7 +265,19 @@ static err_t ethernet_init(struct netif *netif)
 /* Callback function that prints DHCP supplied IP address and registers it with ARP component. */
 static void netif_status_callback(struct netif *netif)
 {
+<<<<<<< HEAD
     if (dhcp_supplied_address(netif)) printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", sel4cp_name, ip4addr_ntoa(netif_ip4_addr(netif)));
+=======
+    if (dhcp_supplied_address(netif)) {
+        /* CDTODO: Only send IP address to ARP if ARP exists */
+        microkit_mr_set(0, ip4_addr_get_u32(netif_ip4_addr(netif)));
+        microkit_mr_set(1, (state.mac[0] << 24) | (state.mac[1] << 16) | (state.mac[2] << 8) | (state.mac[3]));
+        microkit_mr_set(2, (state.mac[4] << 24) | (state.mac[5] << 16));
+        microkit_ppcall(ARP, microkit_msginfo_new(0, 3));
+
+        printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", microkit_name, ip4addr_ntoa(netif_ip4_addr(netif)));
+    }
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 }
 
 static void get_mac(void)
@@ -275,7 +288,22 @@ static void get_mac(void)
     state.mac[2] = 0x1;
     state.mac[3] = 0;
     state.mac[4] = 0;
+<<<<<<< HEAD
     state.mac[5] = 0;
+=======
+    if (!strcmp(microkit_name, "client0")) state.mac[5] = 0;
+    else state.mac[5] = 0x1;
+
+    /* microkit_ppcall(RX_CH, microkit_msginfo_new(0, 0));
+    uint32_t palr = microkit_mr_get(0);
+    uint32_t paur = microkit_mr_get(1);
+    state.mac[0] = palr >> 24;
+    state.mac[1] = palr >> 16 & 0xff;
+    state.mac[2] = palr >> 8 & 0xff;
+    state.mac[3] = palr & 0xff;
+    state.mac[4] = paur >> 24;
+    state.mac[5] = paur >> 16 & 0xff;*/
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 }
 
 void init(void)
@@ -317,21 +345,19 @@ void init(void)
     if (notify_rx && require_signal(state.rx_ring.free_ring)) {
         cancel_signal(state.rx_ring.free_ring);
         notify_rx = false;
-        if (!have_signal) sel4cp_notify_delayed(RX_CH);
-        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + RX_CH) sel4cp_notify(RX_CH);
+        if (!have_signal) microkit_notify_delayed(RX_CH);
+        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + RX_CH) microkit_notify(RX_CH);
     }
 
     if (notify_tx && require_signal(state.tx_ring.used_ring)) {
+        cancel_signal(state.tx_ring.used_ring);
         notify_tx = false;
-        if (!have_signal) {
-            sel4cp_notify_delayed(TX_CH);
-        } else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) {
-            sel4cp_notify(TX_CH);
-        }
+        if (!have_signal) microkit_notify_delayed(TX_CH);
+        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) microkit_notify(TX_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     switch(ch) {
         case RX_CH:
@@ -353,14 +379,14 @@ void notified(sel4cp_channel ch)
     if (notify_rx && require_signal(state.rx_ring.free_ring)) {
         cancel_signal(state.rx_ring.free_ring);
         notify_rx = false;
-        if (!have_signal) sel4cp_notify_delayed(RX_CH);
-        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + RX_CH) sel4cp_notify(RX_CH);
+        if (!have_signal) microkit_notify_delayed(RX_CH);
+        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + RX_CH) microkit_notify(RX_CH);
     }
 
     if (notify_tx && require_signal(state.tx_ring.used_ring)) {
         cancel_signal(state.tx_ring.used_ring);
         notify_tx = false;
-        if (!have_signal) sel4cp_notify_delayed(TX_CH);
-        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) sel4cp_notify(TX_CH);
+        if (!have_signal) microkit_notify_delayed(TX_CH);
+        else if (signal != BASE_OUTPUT_NOTIFICATION_CAP + TX_CH) microkit_notify(TX_CH);
     }
 }

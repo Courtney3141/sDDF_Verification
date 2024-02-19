@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,6 +17,12 @@
 #define TX_CH  1
 #define RX_CH  2
 
+<<<<<<< HEAD
+=======
+/* CDTODO: Extract from system later */
+#define NUM_CLIENTS 3
+
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 /* HW ring buffer regions */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -29,10 +35,13 @@ uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
 
+<<<<<<< HEAD
 /* Buffer data regions paddr */
 uintptr_t rx_buffer_data_region_paddr;
 uintptr_t tx_buffer_data_region_paddr;
 
+=======
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 uintptr_t uart_base;
 
 /* Packet configuration */
@@ -141,7 +150,7 @@ static void rx_provide(void)
             uint16_t stat = RXD_EMPTY;
             if (rx.head + 1 == rx.size) stat |= WRAP;
             rx.descr_mdata[rx.head] = buffer;
-            update_ring_slot(&rx, rx.head, buffer.offset + rx_buffer_data_region_paddr, 0, stat);
+            update_ring_slot(&rx, rx.head, buffer.phys, 0, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -198,7 +207,7 @@ static void rx_return(void)
 
     if (packets_transferred && require_signal(rx_ring.used_ring)) {
         cancel_signal(rx_ring.used_ring);
-        sel4cp_notify(RX_CH);
+        microkit_notify(RX_CH);
     }
 }
 
@@ -211,12 +220,15 @@ static void tx_provide(void)
             int err __attribute__((unused)) = dequeue_used(&tx_ring, &buffer);
             assert(!err);
 
+<<<<<<< HEAD
             uintptr_t phys = buffer.offset + tx_buffer_data_region_paddr;
         
+=======
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
             if (tx.head + 1 == tx.size) stat |= WRAP;
             tx.descr_mdata[tx.head] = buffer;
-            update_ring_slot(&tx, tx.head, phys, buffer.len, stat);
+            update_ring_slot(&tx, tx.head, buffer.phys, buffer.len, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -256,7 +268,7 @@ static void tx_return(void)
 
     if (enqueued && require_signal(tx_ring.free_ring)) {
         cancel_signal(tx_ring.free_ring);
-        sel4cp_notify(TX_CH);
+        microkit_notify(TX_CH);
     }
 }
 
@@ -365,22 +377,25 @@ void init(void)
     ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
 
+<<<<<<< HEAD
     buffers_init((ring_buffer_t *)rx_free, 0, NUM_BUFFERS, BUF_SIZE);
+=======
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 
     rx_provide();
     tx_provide();
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     switch(ch) {
         case IRQ_CH:
             handle_irq();
             /*
              * Delay calling into the kernel to ack the IRQ until the next loop
-             * in the seL4CP event handler loop.
+             * in the microkit event handler loop.
              */
-            sel4cp_irq_ack_delayed(ch);
+            microkit_irq_ack_delayed(ch);
             break;
         case RX_CH:
             rx_provide();

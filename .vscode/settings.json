@@ -5,7 +5,11 @@
         "string.h": "c",
         "tcp.h": "c",
         "util.h": "c",
+<<<<<<< HEAD
        "sel4bench.h": "c"
+=======
+        "etharp.h": "c"
+>>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
     },
     "cmake.configureOnOpen": false
 }
