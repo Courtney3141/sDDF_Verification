@@ -17,9 +17,6 @@
 #define TX_CH  1
 #define RX_CH  2
 
-/* CDTODO: Extract from system later */
-#define NUM_CLIENTS 3
-
 /* HW ring buffer regions */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -31,6 +28,10 @@ uintptr_t rx_free;
 uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
+
+/* Buffer data regions paddr */
+uintptr_t rx_buffer_data_region_paddr;
+uintptr_t tx_buffer_data_region_paddr;
 
 uintptr_t uart_base;
 
@@ -140,7 +141,7 @@ static void rx_provide(void)
             uint16_t stat = RXD_EMPTY;
             if (rx.head + 1 == rx.size) stat |= WRAP;
             rx.descr_mdata[rx.head] = buffer;
-            update_ring_slot(&rx, rx.head, buffer.phys, 0, stat);
+            update_ring_slot(&rx, rx.head, buffer.phys + rx_buffer_data_region_paddr, 0, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -213,7 +214,7 @@ static void tx_provide(void)
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
             if (tx.head + 1 == tx.size) stat |= WRAP;
             tx.descr_mdata[tx.head] = buffer;
-            update_ring_slot(&tx, tx.head, buffer.phys, buffer.len, stat);
+            update_ring_slot(&tx, tx.head, buffer.phys + tx_buffer_data_region_paddr, buffer.len, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -361,7 +362,7 @@ void init(void)
 
     ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
-
+    buffers_init((ring_buffer_t *)rx_free, 0, NUM_BUFFERS, BUF_SIZE);
 
     rx_provide();
     tx_provide();

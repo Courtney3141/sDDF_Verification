@@ -44,14 +44,26 @@
 #define CHECKSUM_GEN_ICMP               0
 #define CHECKSUM_GEN_ICMP6              0
 
+// #define TCP_SND_QUEUELEN 2500
+// #define MEMP_NUM_TCP_SEG TCP_SND_QUEUELEN
+// #define TCP_SND_BUF (100 * TCP_MSS)
+// #define TCP_WND (100 * TCP_MSS)
+// #define LWIP_WND_SCALE 1
+// #define TCP_RCV_SCALE 11
+// #define PBUF_POOL_SIZE 1000
+// #define MEMP_NUM_SYS_TIMEOUT 512
+
 #define TCP_SND_QUEUELEN 2500
 #define MEMP_NUM_TCP_SEG TCP_SND_QUEUELEN
 #define TCP_SND_BUF (100 * TCP_MSS)
 #define TCP_WND (100 * TCP_MSS)
 #define LWIP_WND_SCALE 1
-#define TCP_RCV_SCALE 10
+#define TCP_RCV_SCALE 12
 #define PBUF_POOL_SIZE 1000
 #define MEMP_NUM_SYS_TIMEOUT 512
+#define TCP_MSS 1200
+#define LWIP_TCP_SACK_OUT 1
+#define LWIP_TCP_TIMESTAMPS 1
 
 /* Set this to 0 for performance */
 #define LWIP_STATS 0

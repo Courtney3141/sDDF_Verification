@@ -28,7 +28,6 @@
 #define TIMER  1
 #define RX_CH  2
 #define TX_CH  3
-#define ARP    7
 
 /* Ring buffer regions */
 uintptr_t rx_free;
@@ -168,6 +167,7 @@ static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
         memcpy(frame + copied, curr->payload, curr->len);
         copied += curr->len;
     }
+    cleanCache(buffer.offset + tx_buffer_data_region, buffer.offset + tx_buffer_data_region + copied);
 
     buffer.len = copied;
     err = enqueue_used(&(state.tx_ring), buffer);
@@ -214,6 +214,10 @@ void receive(void)
             int err __attribute__((unused)) = dequeue_used(&state.rx_ring, &buffer);
             assert(!err);
 
+            err = seL4_ARM_VSpace_Invalidate_Data(3, buffer.offset + rx_buffer_data_region, buffer.offset + rx_buffer_data_region + buffer.len);
+            if (err) printf("LWIP|ERROR: ARM Vspace invalidate failed with err %d\n", err);
+            assert(!err);
+
             struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
             if (state.netif.input(p, &state.netif) != ERR_OK) {
                 printf("LWIP|ERROR: unkown error inputting pbuf into network stack\n");
@@ -258,11 +262,6 @@ static err_t ethernet_init(struct netif *netif)
 static void netif_status_callback(struct netif *netif)
 {
     if (dhcp_supplied_address(netif)) {
-        /* CDTODO: Only send IP address to ARP if ARP exists */
-        microkit_mr_set(0, ip4_addr_get_u32(netif_ip4_addr(netif)));
-        microkit_mr_set(1, (state.mac[0] << 24) | (state.mac[1] << 16) | (state.mac[2] << 8) | (state.mac[3]));
-        microkit_mr_set(2, (state.mac[4] << 24) | (state.mac[5] << 16));
-        microkit_ppcall(ARP, microkit_msginfo_new(0, 3));
 
         printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", microkit_name, ip4addr_ntoa(netif_ip4_addr(netif)));
     }
@@ -278,16 +277,6 @@ static void get_mac(void)
     state.mac[4] = 0;
     if (!strcmp(microkit_name, "client0")) state.mac[5] = 0;
     else state.mac[5] = 0x1;
-
-    /* microkit_ppcall(RX_CH, microkit_msginfo_new(0, 0));
-    uint32_t palr = microkit_mr_get(0);
-    uint32_t paur = microkit_mr_get(1);
-    state.mac[0] = palr >> 24;
-    state.mac[1] = palr >> 16 & 0xff;
-    state.mac[2] = palr >> 8 & 0xff;
-    state.mac[3] = palr & 0xff;
-    state.mac[4] = paur >> 24;
-    state.mac[5] = paur >> 16 & 0xff;*/
 }
 
 void init(void)
@@ -325,6 +314,7 @@ void init(void)
 
     setup_udp_socket();
     setup_utilization_socket();
+    setup_tcp_socket();
 
     if (notify_rx && require_signal(state.rx_ring.free_ring)) {
         cancel_signal(state.rx_ring.free_ring);
