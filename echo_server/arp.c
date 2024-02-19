@@ -16,7 +16,7 @@
 #define REG_IP 0
 
 /* CDTODO: Extract from system later */
-#define NUM_CLIENTS 2
+#define NUM_CLIENTS 1
 
 /* Network configuration */
 #define ETH_HWADDR_LEN 6

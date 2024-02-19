@@ -9,27 +9,23 @@
 #define DRIVER 3
 
 /* CDTODO: Extract from system later */
-#define NUM_CLIENTS 3
+#define NUM_CLIENTS 2
 
 /* Ring buffer regions */
 uintptr_t tx_free_drv;
 uintptr_t tx_used_drv;
-uintptr_t tx_free_cli0;
-uintptr_t tx_used_cli0;
-uintptr_t tx_free_cli1;
-uintptr_t tx_used_cli1;
 uintptr_t tx_free_arp;
 uintptr_t tx_used_arp;
+uintptr_t tx_free_cli0;
+uintptr_t tx_used_cli0;
 
 /* Buffer data regions */
 uintptr_t buffer_data_region_arp_vaddr;
 uintptr_t buffer_data_region_cli0_vaddr;
-uintptr_t buffer_data_region_cli1_vaddr;
 uintptr_t buffer_region_vaddrs[NUM_CLIENTS];
 
 uintptr_t buffer_data_region_arp_paddr;
 uintptr_t buffer_data_region_cli0_paddr;
-uintptr_t buffer_data_region_cli1_paddr;
 uintptr_t buffer_region_paddrs[NUM_CLIENTS];
 
 uintptr_t uart_base;
@@ -64,7 +60,6 @@ void tx_provide(void)
 
                 if (buffer.offset % BUF_SIZE || buffer.offset >= BUF_SIZE * NUM_BUFFERS) {
                     printf("MUX_TX|LOG: Client %d provided offset %X which is not buffer aligned or outside of buffer region\n", client, buffer.offset);
-                    /* CDTODO: How do we gaurantee that this operation will succeed? And should we signal the client? */
                     err = enqueue_free(&state.tx_ring_clients[client], buffer);
                     assert(!err);
                     continue;
@@ -107,7 +102,6 @@ void tx_return(void)
             int client = extract_offset(buffer.phys, &buffer.offset);
             assert(client >= 0);
 
-            /* CDTODO: How do we gaurantee that this operation will succeed? */
             err = enqueue_free(&state.tx_ring_clients[client], buffer);
             assert(!err);
             notify_clients[client] = true;
@@ -141,15 +135,12 @@ void init(void)
     ring_init(&state.tx_ring_drv, (ring_buffer_t *)tx_free_drv, (ring_buffer_t *)tx_used_drv, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.tx_ring_clients[0], (ring_buffer_t *)tx_free_arp, (ring_buffer_t *)tx_used_arp, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.tx_ring_clients[1], (ring_buffer_t *)tx_free_cli0, (ring_buffer_t *)tx_used_cli0, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.tx_ring_clients[2], (ring_buffer_t *)tx_free_cli1, (ring_buffer_t *)tx_used_cli1, NUM_BUFFERS, NUM_BUFFERS);
 
     buffer_region_vaddrs[0] = buffer_data_region_arp_vaddr;
     buffer_region_vaddrs[1] = buffer_data_region_cli0_vaddr;
-    buffer_region_vaddrs[2] = buffer_data_region_cli1_vaddr;
 
     buffer_region_paddrs[0] = buffer_data_region_arp_paddr;
     buffer_region_paddrs[1] = buffer_data_region_cli0_paddr;
-    buffer_region_paddrs[2] = buffer_data_region_cli1_paddr;
     
     tx_provide();
 }

@@ -12,18 +12,16 @@
 #define DRIVER_CH 3
 
 /* CDTODO: Extract from system later */
-#define NUM_CLIENTS 3
+#define NUM_CLIENTS 2
 #define ETHER_MTU 1500
 
 /* Ring buffer regions */
 uintptr_t rx_free_drv;
 uintptr_t rx_used_drv;
-uintptr_t rx_free_cli0;
-uintptr_t rx_used_cli0;
-uintptr_t rx_free_cli1;
-uintptr_t rx_used_cli1;
 uintptr_t rx_free_arp;
 uintptr_t rx_used_arp;
+uintptr_t rx_free_cli0;
+uintptr_t rx_used_cli0;
 
 /* Buffer data regions */
 uintptr_t buffer_data_vaddr;
@@ -108,8 +106,9 @@ void rx_provide(void)
                 buff_desc_t buffer;
                 int err __attribute__((unused)) = dequeue_free(&state.rx_ring_clients[client], &buffer);
                 assert(!err);
-                buffer.phys = buffer.offset + buffer_data_paddr;
+                assert(!buffer.offset % BUF_SIZE && buffer.offset < BUF_SIZE * NUM_BUFFERS);
 
+                buffer.phys = buffer.offset + buffer_data_paddr;
                 err = enqueue_free(&state.rx_ring_drv, buffer);
                 assert(!err);
                 notify_drv = true;
@@ -154,17 +153,9 @@ void init(void)
     state.mac_addrs[1][4] = 0;
     state.mac_addrs[1][5] = 0;
 
-    state.mac_addrs[2][0] = 0x52;
-    state.mac_addrs[2][1] = 0x54;
-    state.mac_addrs[2][2] = 0x1;
-    state.mac_addrs[2][3] = 0;
-    state.mac_addrs[2][4] = 0;
-    state.mac_addrs[2][5] = 0x1;
-
     ring_init(&state.rx_ring_drv, (ring_buffer_t *)rx_free_drv, (ring_buffer_t *)rx_used_drv, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.rx_ring_clients[0], (ring_buffer_t *)rx_free_arp, (ring_buffer_t *)rx_used_arp, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&state.rx_ring_clients[1], (ring_buffer_t *)rx_free_cli0, (ring_buffer_t *)rx_used_cli0, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.rx_ring_clients[2], (ring_buffer_t *)rx_free_cli1, (ring_buffer_t *)rx_used_cli1, NUM_BUFFERS, NUM_BUFFERS);
 
     buffers_init((ring_buffer_t *)rx_free_drv, buffer_data_paddr, NUM_BUFFERS, BUF_SIZE);
 
