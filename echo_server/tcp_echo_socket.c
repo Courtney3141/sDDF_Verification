@@ -10,7 +10,8 @@
 
 #define TCP_ECHO_PORT 1237
 
-uintptr_t tcp_recv_buffer;
+#define MAX_PACKET_SIZE 0x1000
+char tcp_recv_buffer[MAX_PACKET_SIZE];
 
 static struct tcp_pcb *tcp_socket;
 
