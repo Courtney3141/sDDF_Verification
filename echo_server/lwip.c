@@ -87,7 +87,6 @@ static void interface_free_buffer(struct pbuf *p)
     pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
     buff_desc_t buffer = {{custom_pbuf_offset->offset}, 0, NULL};
-    /* CDTODO: No obvious way to ensure that the free ring is not full before this function is called... */
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
     notify_rx = true;
