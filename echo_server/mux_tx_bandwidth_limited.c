@@ -100,7 +100,6 @@ void tx_provide(void)
 
             if (buffer.offset % BUF_SIZE || buffer.offset >= BUF_SIZE * NUM_BUFFERS) {
                 printf("MUX_TX|LOG: Client %d provided offset %X which is not buffer aligned or outside of buffer region\n", client, buffer.offset);
-                /* CDTODO: How do we gaurantee that this operation will succeed? And should we signal the client? */
                 err = enqueue_free(&state.tx_ring_clients[client], buffer);
                 assert(!err);
                 continue;
@@ -144,7 +143,6 @@ void tx_return(void)
             int client = extract_offset(buffer.phys, &buffer.offset);
             assert(client >= 0);
 
-            /* CDTODO: How do we gaurantee that this operation will succeed? */
             err = enqueue_free(&state.tx_ring_clients[client], buffer);
             assert(!err);
             notify_clients[client];

@@ -108,8 +108,9 @@ void rx_provide(void)
                 buff_desc_t buffer;
                 int err __attribute__((unused)) = dequeue_free(&state.rx_ring_clients[client], &buffer);
                 assert(!err);
-                buffer.phys = buffer.offset + buffer_data_paddr;
+                assert(!buffer.offset % BUF_SIZE && buffer.offset < BUF_SIZE * NUM_BUFFERS);
 
+                buffer.phys = buffer.offset + buffer_data_paddr;
                 err = enqueue_free(&state.rx_ring_drv, buffer);
                 assert(!err);
                 notify_drv = true;

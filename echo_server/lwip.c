@@ -88,7 +88,6 @@ static void interface_free_buffer(struct pbuf *p)
     pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
     buff_desc_t buffer = {{custom_pbuf_offset->offset}, 0, NULL};
-    /* CDTODO: No obvious way to ensure that the free ring is not full before this function is called... */
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
     notify_rx = true;
@@ -258,7 +257,6 @@ static err_t ethernet_init(struct netif *netif)
 static void netif_status_callback(struct netif *netif)
 {
     if (dhcp_supplied_address(netif)) {
-        /* CDTODO: Only send IP address to ARP if ARP exists */
         sel4cp_mr_set(0, ip4_addr_get_u32(netif_ip4_addr(netif)));
         sel4cp_mr_set(1, (state.mac[0] << 24) | (state.mac[1] << 16) | (state.mac[2] << 8) | (state.mac[3]));
         sel4cp_mr_set(2, (state.mac[4] << 24) | (state.mac[5] << 16));
@@ -278,16 +276,6 @@ static void get_mac(void)
     state.mac[4] = 0;
     if (!strcmp(sel4cp_name, "client0")) state.mac[5] = 0;
     else state.mac[5] = 0x1;
-
-    /* sel4cp_ppcall(RX_CH, sel4cp_msginfo_new(0, 0));
-    uint32_t palr = sel4cp_mr_get(0);
-    uint32_t paur = sel4cp_mr_get(1);
-    state.mac[0] = palr >> 24;
-    state.mac[1] = palr >> 16 & 0xff;
-    state.mac[2] = palr >> 8 & 0xff;
-    state.mac[3] = palr & 0xff;
-    state.mac[4] = paur >> 24;
-    state.mac[5] = paur >> 16 & 0xff;*/
 }
 
 void init(void)

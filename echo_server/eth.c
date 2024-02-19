@@ -17,9 +17,6 @@
 #define TX_CH  1
 #define RX_CH  2
 
-/* CDTODO: Extract from system later */
-#define NUM_CLIENTS 3
-
 /* HW ring buffer regions */
 uintptr_t hw_ring_buffer_vaddr;
 uintptr_t hw_ring_buffer_paddr;
@@ -361,7 +358,6 @@ void init(void)
 
     ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
-
 
     rx_provide();
     tx_provide();
