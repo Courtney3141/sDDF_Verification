@@ -93,17 +93,10 @@ CORE4FILES=$(LWIPDIR)/core/ipv4/autoip.c \
 NETIFFILES=$(LWIPDIR)/netif/ethernet.c
 
 # LWIPFILES: All the above.
-LWIPFILES=lwip.c lwip_timer.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
+LWIPFILES=lwip.c lwip_timer.c cache.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
 LWIP_OBJS := $(LWIPFILES:.c=.o) lwip.o libsharedringbuffer/shared_ringbuffer.o utilization_socket.o udp_echo_socket.o printf.o
 
 ETH_OBJS := eth.o libsharedringbuffer/shared_ringbuffer.o printf.o
-<<<<<<< HEAD
-=======
-MUX_RX_OBJS := mux_rx.o libsharedringbuffer/shared_ringbuffer.o printf.o
-MUX_TX_OBJS := cache.o mux_tx.o libsharedringbuffer/shared_ringbuffer.o printf.o
-#MUX_TX_OBJS := mux_tx_bandwidth_limited.o libsharedringbuffer/shared_ringbuffer.o
-COPY_OBJS := copy.o libsharedringbuffer/shared_ringbuffer.o printf.o
->>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 BENCH_OBJS := benchmark/benchmark.o printf.o
 IDLE_OBJS := benchmark/idle.o
 TIMER_OBJS := timer.o
@@ -149,4 +142,3 @@ $(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) eth.system
 clean:
 	rm -f *.o *.elf .depend*
 	find . -name \*.o |xargs --no-run-if-empty rm
-

@@ -13,12 +13,7 @@
  */
 
 #include <stdint.h>
-<<<<<<< HEAD
-#include <sel4cp.h>
-
-=======
 #include <microkit.h>
->>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 #include "util.h"
 
 #define GET_TIME 0

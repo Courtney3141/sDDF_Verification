@@ -192,49 +192,26 @@ void notified(microkit_channel ch)
             microkit_benchmark_stop_tcb(PD_ETH_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_ETH_ID, kernel, entries, number_schedules, total);
 
-<<<<<<< HEAD
-            // sel4cp_benchmark_stop_tcb(PD_MUX_RX_ID, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_MUX_RX_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_MUX_RX_ID, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_MUX_TX_ID, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_MUX_TX_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_MUX_TX_ID, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_COPY_ID, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_COPY_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_COPY_ID, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_COPY1_ID, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_COPY1_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_COPY1_ID, kernel, entries, number_schedules, total);
-=======
-            microkit_benchmark_stop_tcb(PD_MUX_RX_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_MUX_RX_ID, kernel, entries, number_schedules, total);
-
-            microkit_benchmark_stop_tcb(PD_MUX_TX_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_MUX_TX_ID, kernel, entries, number_schedules, total);
-
-            microkit_benchmark_stop_tcb(PD_COPY_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_COPY_ID, kernel, entries, number_schedules, total);
-
-            microkit_benchmark_stop_tcb(PD_COPY1_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_COPY1_ID, kernel, entries, number_schedules, total);
->>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 
             microkit_benchmark_stop_tcb(PD_LWIP_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_LWIP_ID, kernel, entries, number_schedules, total);
-<<<<<<< HEAD
-
-            // sel4cp_benchmark_stop_tcb(PD_LWIP1_ID, &total, &number_schedules, &kernel, &entries);
+            
+            // microkit_benchmark_stop_tcb(PD_LWIP1_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_LWIP1_ID, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_ARP_ID, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_ARP_ID, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_ARP_ID, kernel, entries, number_schedules, total);
-=======
-            
-            microkit_benchmark_stop_tcb(PD_LWIP1_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_LWIP1_ID, kernel, entries, number_schedules, total);
-
-            microkit_benchmark_stop_tcb(PD_ARP_ID, &total, &number_schedules, &kernel, &entries);
-            print_benchmark_details(PD_ARP_ID, kernel, entries, number_schedules, total);
->>>>>>> ca40e1cb66d4451482398e686acd7885aad85519
 
             microkit_benchmark_stop_tcb(PD_TIMER_ID, &total, &number_schedules, &kernel, &entries);
             print_benchmark_details(PD_TIMER_ID, kernel, entries, number_schedules, total);
