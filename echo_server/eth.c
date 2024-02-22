@@ -48,8 +48,8 @@ struct descriptor {
 
 /* HW ring buffer data type */
 typedef struct {
-    unsigned int head;                               /* index to insert at */
-    unsigned int tail;                               /* index to remove from */
+    unsigned int tail;                               /* index to insert at */
+    unsigned int head;                               /* index to remove from */
     volatile struct descriptor *descr;               /* buffer descripter array */
     buff_desc_t *descr_mdata;                        /* associated meta data array */
     unsigned int size;                               /* size of ring buffer */
@@ -81,12 +81,12 @@ static void set_mac(uint8_t *mac)
 
 static inline bool hw_ring_full(hw_ring_t *ring)
 {
-    return !((ring->head - ring->tail + 1) % ring->size);
+    return !((ring->tail - ring->head + 1) % ring->size);
 }
 
 static inline bool hw_ring_empty(hw_ring_t *ring)
 {
-    return !((ring->head - ring->tail ) % ring->size);
+    return !((ring->tail - ring->head ) % ring->size);
 }
 
 static void update_ring_slot(hw_ring_t *ring, unsigned int idx, uintptr_t phys,
@@ -120,13 +120,13 @@ static void rx_provide(void)
             assert(!err);
 
             uint16_t stat = RXD_EMPTY;
-            if (rx.head + 1 == rx.size) stat |= WRAP;
-            rx.descr_mdata[rx.head] = buffer;
-            update_ring_slot(&rx, rx.head, buffer.phys_or_offset, 0, stat);
+            if (rx.tail + 1 == rx.size) stat |= WRAP;
+            rx.descr_mdata[rx.tail] = buffer;
+            update_ring_slot(&rx, rx.tail, buffer.phys_or_offset, 0, stat);
 
             THREAD_MEMORY_RELEASE();
 
-            rx.head = (rx.head + 1) % rx.size;
+            rx.tail = (rx.tail + 1) % rx.size;
         }
 
         /* Only request a notification from multiplexer if HW ring not full */
@@ -154,15 +154,15 @@ static void rx_return(void)
     bool packets_transferred = false;
     while (!hw_ring_empty(&rx)) {
         /* If buffer slot is still empty, we have processed all packets the device has filled */
-        volatile struct descriptor *d = &(rx.descr[rx.tail]);
+        volatile struct descriptor *d = &(rx.descr[rx.head]);
         if (d->stat & RXD_EMPTY) break;
 
-        buff_desc_t descr_mdata = rx.descr_mdata[rx.tail];
+        buff_desc_t descr_mdata = rx.descr_mdata[rx.head];
         descr_mdata.len = d->len;
         
         THREAD_MEMORY_RELEASE();
 
-        rx.tail = (rx.tail + 1) % rx.size;
+        rx.head = (rx.head + 1) % rx.size;
 
         int err __attribute__((unused)) = enqueue_used(&rx_ring, descr_mdata);
         assert(!err);
@@ -186,13 +186,13 @@ static void tx_provide(void)
             assert(!err);
 
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
-            if (tx.head + 1 == tx.size) stat |= WRAP;
-            tx.descr_mdata[tx.head] = buffer;
-            update_ring_slot(&tx, tx.head, buffer.phys_or_offset, buffer.len, stat);
+            if (tx.tail + 1 == tx.size) stat |= WRAP;
+            tx.descr_mdata[tx.tail] = buffer;
+            update_ring_slot(&tx, tx.tail, buffer.phys_or_offset, buffer.len, stat);
 
             THREAD_MEMORY_RELEASE();
 
-            tx.head = (tx.head + 1) % tx.size;
+            tx.tail = (tx.tail + 1) % tx.size;
             if (!(eth->tdar & TDAR_TDAR)) eth->tdar = TDAR_TDAR;
         }
     
@@ -211,15 +211,15 @@ static void tx_return(void)
     bool enqueued = false;
     while (!hw_ring_empty(&tx)) {
         /* Ensure that this buffer has been sent by the device */
-        volatile struct descriptor *d = &(tx.descr[tx.tail]);
+        volatile struct descriptor *d = &(tx.descr[tx.head]);
         if (d->stat & TXD_READY) break;
 
-        buff_desc_t descr_mdata = tx.descr_mdata[tx.tail];
+        buff_desc_t descr_mdata = tx.descr_mdata[tx.head];
         descr_mdata.len = 0;
 
         THREAD_MEMORY_RELEASE();
 
-        tx.tail = (tx.tail + 1) % tx.size;
+        tx.head = (tx.head + 1) % tx.size;
 
         int err __attribute__((unused)) = enqueue_free(&tx_ring, descr_mdata);
         assert(!err);

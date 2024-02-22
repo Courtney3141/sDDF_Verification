@@ -27,9 +27,9 @@ typedef struct buff_desc {
 
 /* Ring buffer data structure */
 typedef struct ring_buffer {
-    uint32_t head;                                                  /* index to insert at */
-    uint32_t tail;                                                  /* index to remove from */
-    buff_desc_t buffers[MAX_BUFFS];                             /* buffer descripter array - length of array must be equal ro ring buffer size */
+    uint32_t tail;                                                  /* index to insert at */
+    uint32_t head;                                                  /* index to remove from */
+    buff_desc_t buffers[MAX_BUFFS];                                 /* buffer descripter array - length of array must be equal ro ring buffer size */
     uint32_t size;                                                  /* size of the ring buffer */
     bool consumer_signalled;                                        /* flag to indicate whether consumer requires signalling */
 } ring_buffer_t;
@@ -49,7 +49,7 @@ typedef struct ring_handle {
  */
 static inline bool ring_empty(ring_buffer_t *ring)
 {
-    return (ring->head == ring->tail);
+    return (ring->tail == ring->head);
 }
 
 /**
@@ -61,7 +61,7 @@ static inline bool ring_empty(ring_buffer_t *ring)
  */
 static inline bool ring_full(ring_buffer_t *ring)
 {
-    return (((ring->head + 1) % ring->size) == ring->tail);
+    return (((ring->tail + 1) % ring->size) == ring->head);
 }
 
 /**
@@ -73,7 +73,7 @@ static inline bool ring_full(ring_buffer_t *ring)
  */
 static inline uint32_t ring_size(ring_buffer_t *ring)
 {
-    return (((ring->head + ring->size) - ring->tail) % ring->size);
+    return (((ring->tail + ring->size) - ring->head) % ring->size);
 }
 
 /**
@@ -88,9 +88,9 @@ static inline int enqueue(ring_buffer_t *ring, buff_desc_t buffer)
 {
     if (ring_full(ring)) return -1;
 
-    ring->buffers[ring->head] = buffer;
+    ring->buffers[ring->tail] = buffer;
     if (MULTICORE) THREAD_MEMORY_RELEASE();
-    ring->head = (ring->head + 1) % ring->size;
+    ring->tail = (ring->tail + 1) % ring->size;
 
     return 0;
 }
@@ -107,9 +107,9 @@ static inline int dequeue(ring_buffer_t *ring, buff_desc_t *buffer)
 {
     if (ring_empty(ring)) return -1;
 
-    *buffer = ring->buffers[ring->tail];
+    *buffer = ring->buffers[ring->head];
     if (MULTICORE) THREAD_MEMORY_RELEASE();
-    ring->tail = (ring->tail + 1) % ring->size;
+    ring->head = (ring->head + 1) % ring->size;
 
     return 0;
 }
