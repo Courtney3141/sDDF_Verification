@@ -21,14 +21,18 @@
 #include "echo.h"
 #include "sel4bench.h"
 #include "shared_ringbuffer.h"
+#include "system.h"
 #include "timer.h"
 #include "util.h"
 
-/* Notification and PPC channels - ensure these align with .system file! */
+/* Notification and PPC channels */
 #define TIMER  1
 #define RX_CH  2
 #define TX_CH  3
 #define ARP    7
+
+/* Pbuf internal storage */
+#define NUM_PBUFFS 512
 
 /* Ring buffer regions */
 uintptr_t rx_free;
@@ -55,7 +59,7 @@ typedef struct pbuf_custom_offset {
 /* Initialise an array to hold lwip pbuffs */
 LWIP_MEMPOOL_DECLARE(
     RX_POOL,
-    NUM_BUFFERS * 2,
+    NUM_PBUFFS * 2,
     sizeof(struct pbuf_custom_offset),
     "Zero-copy RX pool"
 );
@@ -63,7 +67,7 @@ LWIP_MEMPOOL_DECLARE(
 typedef struct state {
     struct netif netif;
     /* mac address for this client */
-    uint8_t mac[6];
+    uint8_t mac[MAC_SIZE];
 
     /* Ring handles */
     ring_handle_t rx_ring;
@@ -87,7 +91,7 @@ static void interface_free_buffer(struct pbuf *p)
     SYS_ARCH_DECL_PROTECT(old_level);
     pbuf_custom_offset_t *custom_pbuf_offset = (pbuf_custom_offset_t *)p;
     SYS_ARCH_PROTECT(old_level);
-    buff_desc_t buffer = {{custom_pbuf_offset->offset}, 0, NULL};
+    buff_desc_t buffer = {custom_pbuf_offset->offset, 0};
     int err __attribute__((unused)) = enqueue_free(&(state.rx_ring), buffer);
     assert(!err);
     notify_rx = true;
@@ -116,7 +120,7 @@ static struct pbuf *create_interface_buffer(uintptr_t offset, size_t length)
         PBUF_REF,
         &custom_pbuf_offset->custom,
         (void *)(offset + rx_buffer_data_region),
-        BUF_SIZE
+        BUFF_SIZE
     );
 }
 
@@ -147,12 +151,12 @@ void enqueue_pbufs(struct pbuf *p)
  * */
 static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
 {
-    if (p->tot_len > BUF_SIZE) {
-        printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", p->tot_len, BUF_SIZE);
+    if (p->tot_len > BUFF_SIZE) {
+        printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", p->tot_len, BUFF_SIZE);
         return ERR_MEM;
     }
 
-    if (ring_full(state.tx_ring.used_ring) || ring_empty(state.tx_ring.free_ring)) {
+    if (ring_empty(state.tx_ring.free_ring)) {
         enqueue_pbufs(p);
         return ERR_OK;
     }
@@ -161,7 +165,7 @@ static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
     int err __attribute__((unused)) = dequeue_free(&(state.tx_ring), &buffer);
     assert(!err);
 
-    unsigned char *frame = (unsigned char *)(buffer.offset + tx_buffer_data_region);
+    unsigned char *frame = (unsigned char *)(buffer.phys_or_offset + tx_buffer_data_region);
     unsigned int copied = 0;
     for (struct pbuf *curr = p; curr != NULL; curr = curr->next) {
         memcpy(frame + copied, curr->payload, curr->len);
@@ -181,9 +185,9 @@ void transmit(void)
 {
     bool reprocess = true;
     while (reprocess) {
-        while(state.head != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
+        while(state.head != NULL && !ring_empty(state.tx_ring.free_ring)) {
             err_t err = lwip_eth_send(&state.netif, state.head);
-            if (err == ERR_MEM) printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", state.head->tot_len, BUF_SIZE);
+            if (err == ERR_MEM) printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", state.head->tot_len, BUFF_SIZE);
             else if (err != ERR_OK) printf("LWIP|ERROR: unkown error when trying to send pbuf %X\n", state.head);
             
             struct pbuf *temp = state.head;
@@ -197,7 +201,7 @@ void transmit(void)
         else request_signal(state.tx_ring.free_ring);
         reprocess = false;
 
-        if (state.head != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
+        if (state.head != NULL && !ring_empty(state.tx_ring.free_ring)) {
             cancel_signal(state.tx_ring.free_ring);
             reprocess = true;
         }
@@ -213,7 +217,7 @@ void receive(void)
             int err __attribute__((unused)) = dequeue_used(&state.rx_ring, &buffer);
             assert(!err);
 
-            struct pbuf *p = create_interface_buffer(buffer.offset, buffer.len);
+            struct pbuf *p = create_interface_buffer(buffer.phys_or_offset, buffer.len);
             if (state.netif.input(p, &state.netif) != ERR_OK) {
                 printf("LWIP|ERROR: unkown error inputting pbuf into network stack\n");
                 pbuf_free(p);
@@ -258,39 +262,25 @@ static void netif_status_callback(struct netif *netif)
 {
     if (dhcp_supplied_address(netif)) {
         sel4cp_mr_set(0, ip4_addr_get_u32(netif_ip4_addr(netif)));
-        sel4cp_mr_set(1, (state.mac[0] << 24) | (state.mac[1] << 16) | (state.mac[2] << 8) | (state.mac[3]));
-        sel4cp_mr_set(2, (state.mac[4] << 24) | (state.mac[5] << 16));
+        sel4cp_mr_set(1, (state.mac[0] << 8) | state.mac[1]);
+        sel4cp_mr_set(2, (state.mac[2] << 24) |  (state.mac[3] << 16) | (state.mac[4] << 8) | state.mac[5]);
         sel4cp_ppcall(ARP, sel4cp_msginfo_new(0, 3));
 
         printf("LWIP|NOTICE: DHCP request for %s returned IP address: %s\n", sel4cp_name, ip4addr_ntoa(netif_ip4_addr(netif)));
     }
 }
 
-static void get_mac(void)
-{
-    /* CDTODO: Extract from system later */
-    state.mac[0] = 0x52;
-    state.mac[1] = 0x54;
-    state.mac[2] = 0x1;
-    state.mac[3] = 0;
-    state.mac[4] = 0;
-    if (!strcmp(sel4cp_name, "client0")) state.mac[5] = 0;
-    else state.mac[5] = 0x1;
-}
-
 void init(void)
 {
-    ring_init(&state.rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
-
-    buffers_init((ring_buffer_t *)tx_free, 0, NUM_BUFFERS, BUF_SIZE);
+    cli_ring_init_sys(sel4cp_name, &state.rx_ring, rx_free, rx_used, &state.tx_ring, tx_free, tx_used);
+    buffers_init((ring_buffer_t *)tx_free, 0, state.tx_ring.free_ring->size);
 
     lwip_init();
     set_timeout();
 
     LWIP_MEMPOOL_INIT(RX_POOL);
 
-    get_mac();
+    mac_addr_init_sys(sel4cp_name, state.mac);
 
     /* Set dummy IP configuration values to get lwIP bootstrapped  */
     struct ip4_addr netmask, ipaddr, gw, multicast;
@@ -344,7 +334,7 @@ void notified(sel4cp_channel ch)
             receive();
             break;
         default:
-            printf("LWIP|LOG: received notification on unexpected channel: \n", ch);
+            printf("LWIP|LOG: received notification on unexpected channel: %lu\n", ch);
             break;
     }
     

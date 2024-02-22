@@ -1,50 +1,47 @@
 #include "cache.h"
 #include "shared_ringbuffer.h"
+#include "system.h"
 #include "util.h"
 
-/* Notification channels - ensure these align with .system file! */
-#define ARP 0
-#define CLIENT0 1
-#define CLIENT1 2
-#define DRIVER 3
-
-/* CDTODO: Extract from system later */
-#define NUM_CLIENTS 3
+/* Notification channels */
+#define DRIVER 0
+#define CLIENT_CH 1
 
 /* Ring buffer regions */
 uintptr_t tx_free_drv;
 uintptr_t tx_used_drv;
+uintptr_t tx_free_arp;
+uintptr_t tx_used_arp;
 uintptr_t tx_free_cli0;
 uintptr_t tx_used_cli0;
 uintptr_t tx_free_cli1;
 uintptr_t tx_used_cli1;
-uintptr_t tx_free_arp;
-uintptr_t tx_used_arp;
 
 /* Buffer data regions */
 uintptr_t buffer_data_region_arp_vaddr;
 uintptr_t buffer_data_region_cli0_vaddr;
 uintptr_t buffer_data_region_cli1_vaddr;
-uintptr_t buffer_region_vaddrs[NUM_CLIENTS];
 
 uintptr_t buffer_data_region_arp_paddr;
 uintptr_t buffer_data_region_cli0_paddr;
 uintptr_t buffer_data_region_cli1_paddr;
-uintptr_t buffer_region_paddrs[NUM_CLIENTS];
 
 uintptr_t uart_base;
 
 typedef struct state {
     ring_handle_t tx_ring_drv;
     ring_handle_t tx_ring_clients[NUM_CLIENTS];
+    uintptr_t buffer_region_vaddrs[NUM_CLIENTS];
+    uintptr_t buffer_region_paddrs[NUM_CLIENTS];
 } state_t;
 
 state_t state;
 
-int extract_offset(uintptr_t phys, uintptr_t *offset) {
+int extract_offset(uintptr_t *phys) {
     for (int client = 0; client < NUM_CLIENTS; client++) {
-        if (phys >= buffer_region_paddrs[client] && phys < buffer_region_paddrs[client] + NUM_BUFFERS * BUF_SIZE) {
-            *offset = phys - buffer_region_paddrs[client];
+        if (*phys >= state.buffer_region_paddrs[client] && 
+            *phys < state.buffer_region_paddrs[client] + state.tx_ring_clients[client].free_ring->size * BUFF_SIZE) {
+            *phys = *phys - state.buffer_region_paddrs[client];
             return client;
         }
     }
@@ -57,21 +54,22 @@ void tx_provide(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         bool reprocess = true;
         while (reprocess) {
-            while (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
+            while (!ring_empty(state.tx_ring_clients[client].used_ring)) {
                 buff_desc_t buffer;
                 int err __attribute__((unused)) = dequeue_used(&state.tx_ring_clients[client], &buffer);
                 assert(!err);
 
-                if (buffer.offset % BUF_SIZE || buffer.offset >= BUF_SIZE * NUM_BUFFERS) {
-                    printf("MUX_TX|LOG: Client %d provided offset %X which is not buffer aligned or outside of buffer region\n", client, buffer.offset);
+                if (buffer.phys_or_offset % BUFF_SIZE || 
+                    buffer.phys_or_offset >= BUFF_SIZE * state.tx_ring_clients[client].used_ring->size) {
+                    printf("MUX_TX|LOG: Client %d provided offset %X which is not buffer aligned or outside of buffer region\n", client, buffer.phys_or_offset);
                     err = enqueue_free(&state.tx_ring_clients[client], buffer);
                     assert(!err);
                     continue;
                 }
 
-                cleanCache(buffer.offset + buffer_region_vaddrs[client], buffer.offset + buffer_region_vaddrs[client] + buffer.len);
+                cleanCache(buffer.phys_or_offset + state.buffer_region_vaddrs[client], buffer.phys_or_offset + state.buffer_region_vaddrs[client] + buffer.len);
 
-                buffer.phys = buffer.offset + buffer_region_paddrs[client];
+                buffer.phys_or_offset = buffer.phys_or_offset + state.buffer_region_paddrs[client];
                 err = enqueue_used(&state.tx_ring_drv, buffer);
                 assert(!err);
                 enqueued = true;
@@ -80,7 +78,7 @@ void tx_provide(void)
             request_signal(state.tx_ring_clients[client].used_ring);
             reprocess = false;
 
-            if (!ring_empty(state.tx_ring_clients[client].used_ring) && !ring_full(state.tx_ring_drv.used_ring)) {
+            if (!ring_empty(state.tx_ring_clients[client].used_ring)) {
                 cancel_signal(state.tx_ring_clients[client].used_ring);
                 reprocess = true;
             }
@@ -103,7 +101,7 @@ void tx_return(void)
             int err __attribute__((unused)) = dequeue_free(&state.tx_ring_drv, &buffer);
             assert(!err);
 
-            int client = extract_offset(buffer.phys, &buffer.offset);
+            int client = extract_offset(&buffer.phys_or_offset);
             assert(client >= 0);
 
             err = enqueue_free(&state.tx_ring_clients[client], buffer);
@@ -123,7 +121,7 @@ void tx_return(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client] && require_signal(state.tx_ring_clients[client].free_ring)) {
             cancel_signal(state.tx_ring_clients[client].free_ring);
-            sel4cp_notify(client);
+            sel4cp_notify(client + CLIENT_CH);
         }
     }
 }
@@ -136,18 +134,15 @@ void notified(sel4cp_channel ch)
 
 void init(void)
 {
-    ring_init(&state.tx_ring_drv, (ring_buffer_t *)tx_free_drv, (ring_buffer_t *)tx_used_drv, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.tx_ring_clients[0], (ring_buffer_t *)tx_free_arp, (ring_buffer_t *)tx_used_arp, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.tx_ring_clients[1], (ring_buffer_t *)tx_free_cli0, (ring_buffer_t *)tx_used_cli0, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&state.tx_ring_clients[2], (ring_buffer_t *)tx_free_cli1, (ring_buffer_t *)tx_used_cli1, NUM_BUFFERS, NUM_BUFFERS);
+    ring_init(&state.tx_ring_drv, (ring_buffer_t *)tx_free_drv, (ring_buffer_t *)tx_used_drv, TX_RING_SIZE_DRIV);
+    mux_ring_init_sys(sel4cp_name, state.tx_ring_clients, tx_free_arp, tx_used_arp);
+    
+    mem_region_init_sys(sel4cp_name, state.buffer_region_vaddrs, buffer_data_region_arp_vaddr);
 
-    buffer_region_vaddrs[0] = buffer_data_region_arp_vaddr;
-    buffer_region_vaddrs[1] = buffer_data_region_cli0_vaddr;
-    buffer_region_vaddrs[2] = buffer_data_region_cli1_vaddr;
-
-    buffer_region_paddrs[0] = buffer_data_region_arp_paddr;
-    buffer_region_paddrs[1] = buffer_data_region_cli0_paddr;
-    buffer_region_paddrs[2] = buffer_data_region_cli1_paddr;
+    /* CDTODO: Can we make this system agnostic? */
+    state.buffer_region_paddrs[0] = buffer_data_region_arp_paddr;
+    state.buffer_region_paddrs[1] = buffer_data_region_cli0_paddr;
+    state.buffer_region_paddrs[2] = buffer_data_region_cli1_paddr;
     
     tx_provide();
 }

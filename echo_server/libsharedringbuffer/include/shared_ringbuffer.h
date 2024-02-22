@@ -10,29 +10,26 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <sel4cp.h>
+
+#include "echo.h"
 #include "util.h"
 #include "fence.h"
 
-/* CDTODO: Extract from system later. Ring buffers should bave configurable places per buffer... */
-#define BUF_SIZE 2048
-#define NUM_BUFFERS 512
+#define MAX_BUFFS 1536
+#define BUFF_SIZE 2048
 #define MULTICORE 0
 
 /* Buffer descriptor */
 typedef struct buff_desc {
-    union {
-       uintptr_t offset;                                            /* offset of buffer within buffer memory region */
-       uintptr_t phys;                                              /* physical address of buffer */
-    };
+    uintptr_t phys_or_offset;                                       /* offset of buffer within buffer memory region or physical address of buffer */
     uint16_t len;                                                   /* length of data inside buffer */
-    void *cookie;                                                   /* associated metadata */
 } buff_desc_t;
 
 /* Ring buffer data structure */
 typedef struct ring_buffer {
     uint32_t head;                                                  /* index to insert at */
     uint32_t tail;                                                  /* index to remove from */
-    buff_desc_t buffers[NUM_BUFFERS];                               /* buffer descripter array - length of array must be equal ro ring buffer size */
+    buff_desc_t buffers[MAX_BUFFS];                             /* buffer descripter array - length of array must be equal ro ring buffer size */
     uint32_t size;                                                  /* size of the ring buffer */
     bool consumer_signalled;                                        /* flag to indicate whether consumer requires signalling */
 } ring_buffer_t;
@@ -175,10 +172,9 @@ static inline int dequeue_used(ring_handle_t *ring, buff_desc_t *buffer)
  * @param ring ring handle to use.
  * @param free pointer to free ring in shared memory.
  * @param used pointer to used ring in shared memory.
- * @param free_size size of the free ring.
- * @param used_size size of the used ring.
+ * @param size size of the free and used rings.
  */
-void ring_init(ring_handle_t *ring, ring_buffer_t *free, ring_buffer_t *used, uint32_t free_size, uint32_t used_size);
+void ring_init(ring_handle_t *ring, ring_buffer_t *free, ring_buffer_t *used, uint32_t size);
 
 /**
  * Initialise the free ring by filling with all available ring buffers.
@@ -186,12 +182,11 @@ void ring_init(ring_handle_t *ring, ring_buffer_t *free, ring_buffer_t *used, ui
  * @param free_ring ring buffer to fill.
  * @param base_addr start of the memory region the offsets are applied to (only used between mux and driver)
  * @param ring_size size of the ring buffer.
- * @param buffer_size size of the buffers being enqueued.
  */
-static inline void buffers_init(ring_buffer_t *free_ring, uintptr_t base_addr, uint32_t ring_size, uint32_t buffer_size)
+static inline void buffers_init(ring_buffer_t *free_ring, uintptr_t base_addr, uint32_t ring_size)
 {
     for (int i = 0; i < ring_size - 1; i++) {
-        buff_desc_t buffer = {{(buffer_size * i) + base_addr}, 0, NULL};
+        buff_desc_t buffer = {(BUFF_SIZE * i) + base_addr, 0};
         int err __attribute__((unused)) = enqueue(free_ring, buffer);
         assert(!err);
     }

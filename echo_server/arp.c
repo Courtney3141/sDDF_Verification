@@ -5,9 +5,10 @@
 #include "lwip/ip_addr.h"
 #include "netif/etharp.h"
 #include "shared_ringbuffer.h"
+#include "system.h"
 #include "util.h"
 
-/* Notification and PPC channels - ensure these align with .system file! */
+/* Notification and PPC channels */
 #define RX_CH 0
 #define TX_CH 1
 #define CLIENT_CH 2
@@ -15,14 +16,13 @@
 /* PPC message labels */
 #define REG_IP 0
 
-/* CDTODO: Extract from system later */
-#define NUM_CLIENTS 2
-
 /* Network configuration */
 #define ETH_HWADDR_LEN 6
 #define IPV4_PROTO_LEN 4
 #define PADDING_SIZE 10
 #define LWIP_IANA_HWTYPE_ETHERNET 1
+
+#define NUM_ARP_CLIENTS (NUM_CLIENTS - 1)
 
 /* Ring handles */
 ring_handle_t rx_ring;
@@ -41,8 +41,8 @@ uintptr_t tx_buffer_data_region;
 uintptr_t uart_base;
 
 /* Client network configuration */
-uint8_t mac_addrs[NUM_CLIENTS][ETH_HWADDR_LEN];
-uint32_t ipv4_addrs[NUM_CLIENTS];
+uint8_t mac_addrs[NUM_ARP_CLIENTS][ETH_HWADDR_LEN];
+uint32_t ipv4_addrs[NUM_ARP_CLIENTS];
 
 struct __attribute__((__packed__)) arp_packet {
     uint8_t ethdst_addr[ETH_HWADDR_LEN];
@@ -63,7 +63,7 @@ struct __attribute__((__packed__)) arp_packet {
 
 static int match_ip_to_client(uint32_t addr)
 {
-    for (int i = 0; i < NUM_CLIENTS; i++) {
+    for (int i = 0; i < NUM_ARP_CLIENTS; i++) {
         if (ipv4_addrs[i] == addr) {
             return i;
         }
@@ -77,7 +77,7 @@ static int arp_reply(const uint8_t ethsrc_addr[ETH_HWADDR_LEN],
                 const uint8_t hwsrc_addr[ETH_HWADDR_LEN], const uint32_t ipsrc_addr,
                 const uint8_t hwdst_addr[ETH_HWADDR_LEN], const uint32_t ipdst_addr)
 {
-    if (ring_empty(tx_ring.free_ring) || ring_full(tx_ring.used_ring)) {
+    if (ring_empty(tx_ring.free_ring)) {
         printf("ARP|LOG: Transmit free ring empty or transmit used ring full. Dropping reply\n");
         return -1;
     }
@@ -86,7 +86,7 @@ static int arp_reply(const uint8_t ethsrc_addr[ETH_HWADDR_LEN],
     int err __attribute__((unused)) = dequeue_free(&tx_ring, &buffer);
     assert(!err);
 
-    uintptr_t addr = tx_buffer_data_region + buffer.offset;
+    uintptr_t addr = tx_buffer_data_region + buffer.phys_or_offset;
 
     struct arp_packet *reply = (struct arp_packet *)addr;
     memcpy(&reply->ethdst_addr, ethdst_addr, ETH_HWADDR_LEN);
@@ -117,12 +117,11 @@ void receive(void)
     bool transmitted = false;
     bool reprocess = true;
     while (reprocess) {
-        while (!ring_empty(rx_ring.used_ring) && !ring_full(rx_ring.free_ring)) {
+        while (!ring_empty(rx_ring.used_ring)) {
             buff_desc_t buffer;
             int err __attribute__((unused)) = dequeue_used(&rx_ring, &buffer);
             assert(!err);
-
-            uintptr_t addr = rx_buffer_data_region + buffer.offset;
+            uintptr_t addr = rx_buffer_data_region + buffer.phys_or_offset;
 
             /* Check if packet is an ARP request */
             struct eth_hdr *ethhdr = (struct eth_hdr *)addr;
@@ -148,7 +147,7 @@ void receive(void)
         request_signal(rx_ring.used_ring);
         reprocess = false;
 
-        if (!ring_empty(rx_ring.used_ring) && !ring_full(rx_ring.free_ring)) {
+        if (!ring_empty(rx_ring.used_ring)) {
             cancel_signal(rx_ring.used_ring);
             reprocess = true;
         }
@@ -168,29 +167,21 @@ void notified(sel4cp_channel ch)
 seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
 {
     int client = ch - CLIENT_CH;
-    if (client >= NUM_CLIENTS || client < 0) {
+    if (client >= NUM_ARP_CLIENTS || client < 0) {
         printf("ARP|LOG: PPC from unkown client: %d\n", client);
         return sel4cp_msginfo_new(0, 0);
     }
 
     uint32_t ip_addr = sel4cp_mr_get(0);
-    uint32_t mac_lower = sel4cp_mr_get(1);
-    uint32_t mac_higher = sel4cp_mr_get(2);
+    uint32_t mac_higher = sel4cp_mr_get(1);
+    uint32_t mac_lower = sel4cp_mr_get(2);
+    uint64_t mac = (((uint64_t) mac_higher) << 32) | mac_lower;
 
-    uint8_t mac[8];
-    mac[0] = mac_lower >> 24;
-    mac[1] = mac_lower >> 16 & 0xff;
-    mac[2] = mac_lower >> 8 & 0xff;
-    mac[3] = mac_lower & 0xff;
-    mac[4] = mac_higher >> 24;
-    mac[5] = mac_higher >> 16 & 0xff;
     char buf[16];
-
     switch (sel4cp_msginfo_get_label(msginfo)) {
         case REG_IP:
             printf("ARP|NOTICE: client%d registering ip address: %s with MAC: ", client, ipaddr_to_string(ip_addr, buf, 16));
             dump_mac(mac);
-            printf("\n");
             ipv4_addrs[client] = ip_addr;
             break;
         default:
@@ -203,23 +194,9 @@ seL4_MessageInfo_t protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
 
 void init(void)
 {
-    ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
+    ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, RX_RING_SIZE_ARP);
+    ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, TX_RING_SIZE_ARP);
+    buffers_init((ring_buffer_t *)tx_free, 0, TX_RING_SIZE_ARP);
 
-    buffers_init((ring_buffer_t *)tx_free, 0, NUM_BUFFERS, BUF_SIZE);
-
-    /* CDTODO: Extract from system later */
-    mac_addrs[0][0] = 0x52;
-    mac_addrs[0][1] = 0x54;
-    mac_addrs[0][2] = 0x1;
-    mac_addrs[0][3] = 0;
-    mac_addrs[0][4] = 0;
-    mac_addrs[0][5] = 0;
-
-    mac_addrs[1][0] = 0x52;
-    mac_addrs[1][1] = 0x54;
-    mac_addrs[1][2] = 0x1;
-    mac_addrs[1][3] = 0;
-    mac_addrs[1][4] = 0;
-    mac_addrs[1][5] = 1;
+    mac_addr_init_sys(sel4cp_name, (uint8_t *) mac_addrs);
 }

@@ -9,10 +9,12 @@
 #include <stdint.h>
 
 #include "eth.h"
+#include "networkutil.h"
 #include "shared_ringbuffer.h"
+#include "system.h"
 #include "util.h"
 
-/* Notification and PPC channels - ensure these align with .system file! */
+/* Notification and IRQ channels */
 #define IRQ_CH 0
 #define TX_CH  1
 #define RX_CH  2
@@ -31,15 +33,11 @@ uintptr_t tx_used;
 
 uintptr_t uart_base;
 
-/* Packet configuration */
-#define MAX_PACKET_SIZE     1536
-
 /* HW ring buffer configuration */
 #define RX_COUNT 256
 #define TX_COUNT 256
 
-_Static_assert((RX_COUNT + TX_COUNT) * 2 * BUF_SIZE <= 0x200000, "Expect rx+tx buffers to fit in single 2MB page");
-_Static_assert(sizeof(ring_buffer_t) <= 0x200000, "Expect ring buffer ring to fit in single 2MB page");
+_Static_assert((RX_COUNT + TX_COUNT) * 2 * BUFF_SIZE <= DATA_REGION_SIZE, "Expect rx+tx buffers to fit in single 2MB page");
 
 /* HW ring descriptor (shared with device) */
 struct descriptor {
@@ -66,27 +64,14 @@ ring_handle_t rx_ring;
 ring_handle_t tx_ring;
 
 /* Network configuration */
-static uint8_t mac[6];
+#define MAX_PACKET_SIZE     1536
+static uint8_t mac[MAC_SIZE];
 
 /* Ethernet device address */
 volatile struct enet_regs *eth = (void *)(uintptr_t)0x2000000;
 
 /* IRQ mask filtering receival and transmission of packets and bus errors */
 uint32_t irq_mask = IRQ_MASK;
-
-static void get_mac_addr(uint8_t *mac)
-{
-    uint32_t l, h;
-    l = eth->palr;
-    h = eth->paur;
-
-    mac[0] = l >> 24;
-    mac[1] = l >> 16 & 0xff;
-    mac[2] = l >> 8 & 0xff;
-    mac[3] = l & 0xff;
-    mac[4] = h >> 24;
-    mac[5] = h >> 16 & 0xff;
-}
 
 static void set_mac(uint8_t *mac)
 {
@@ -137,7 +122,7 @@ static void rx_provide(void)
             uint16_t stat = RXD_EMPTY;
             if (rx.head + 1 == rx.size) stat |= WRAP;
             rx.descr_mdata[rx.head] = buffer;
-            update_ring_slot(&rx, rx.head, buffer.phys, 0, stat);
+            update_ring_slot(&rx, rx.head, buffer.phys_or_offset, 0, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -166,15 +151,8 @@ static void rx_provide(void)
 
 static void rx_return(void)
 {
-    if (ring_full(rx_ring.used_ring)) {
-        /* Rx ring is full so diasble RX IRQs. */
-        enable_irqs(NETIRQ_TXF | NETIRQ_EBERR);
-        __sync_synchronize();
-        return;
-    }
-
     bool packets_transferred = false;
-    while (!hw_ring_empty(&rx) && !ring_full(rx_ring.used_ring)) {
+    while (!hw_ring_empty(&rx)) {
         /* If buffer slot is still empty, we have processed all packets the device has filled */
         volatile struct descriptor *d = &(rx.descr[rx.tail]);
         if (d->stat & RXD_EMPTY) break;
@@ -210,7 +188,7 @@ static void tx_provide(void)
             uint16_t stat = TXD_READY | TXD_ADDCRC | TXD_LAST;
             if (tx.head + 1 == tx.size) stat |= WRAP;
             tx.descr_mdata[tx.head] = buffer;
-            update_ring_slot(&tx, tx.head, buffer.phys, buffer.len, stat);
+            update_ring_slot(&tx, tx.head, buffer.phys_or_offset, buffer.len, stat);
 
             THREAD_MEMORY_RELEASE();
 
@@ -231,7 +209,7 @@ static void tx_provide(void)
 static void tx_return(void)
 {
     bool enqueued = false;
-    while (!hw_ring_empty(&tx) && !ring_full(tx_ring.free_ring)) {
+    while (!hw_ring_empty(&tx)) {
         /* Ensure that this buffer has been sent by the device */
         volatile struct descriptor *d = &(tx.descr[tx.tail]);
         if (d->stat & TXD_READY) break;
@@ -274,7 +252,11 @@ static void handle_irq(void)
 
 static void eth_setup(void)
 {
-    get_mac_addr(mac);
+    uint64_t l, h;
+    l = eth->palr;
+    h = eth->paur;
+    uint64_t reg_mac = (l << 16) | (h >> 16 & 0xffff);
+    set_mac_addr(mac, reg_mac);
 
     /* Set up HW rings */
     rx.descr = (volatile struct descriptor *)hw_ring_buffer_vaddr;
@@ -356,8 +338,8 @@ void init(void)
 {
     eth_setup();
 
-    ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NUM_BUFFERS, NUM_BUFFERS);
-    ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, NUM_BUFFERS, NUM_BUFFERS);
+    ring_init(&rx_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, RX_RING_SIZE_DRIV);
+    ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, TX_RING_SIZE_DRIV);
 
     rx_provide();
     tx_provide();
@@ -381,7 +363,7 @@ void notified(sel4cp_channel ch)
             tx_provide();
             break;
         default:
-            printf("ETH|LOG: received notification on unexpected channel: %X\n", ch);
+            printf("ETH|LOG: received notification on unexpected channel: %lu\n", ch);
             break;
     }
 }

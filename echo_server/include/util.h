@@ -5,6 +5,11 @@
 
 #pragma once
 
+#include <stdint.h>
+
+#include "cc.h"
+#include "printf.h"
+
 #define UART_REG(x) ((volatile uint32_t *)(UART_BASE + (x)))
 #define UART_BASE 0x5000000 //0x30890000 in hardware on imx8mm.
 #define STAT 0x98
@@ -20,6 +25,8 @@
 #define likely(x)   (!!(x))
 #define unlikely(x) (!!(x))
 #endif
+
+#define ROUND_UP(n,d) (n/d + (n % d == 0 ? 0 : 1))
 
 static void putC(uint8_t ch)
 {
@@ -84,70 +91,6 @@ static void _assert_fail(const char  *assertion, const char  *file, unsigned int
     print(function);
     print("\n");
     while (1) {}
-}
-
-/* CDTODO: From here will be included in a separate library */
-
-#include "printf.h"
-#include "cc.h"
-#include <stdint.h>
-
-/*
-     MAC address for imx8mm 
-    state.mac_addrs[0][0] = 0;
-    state.mac_addrs[0][1] = 0x4;
-    state.mac_addrs[0][2] = 0x9f;
-    state.mac_addrs[0][3] = 0x5;
-    state.mac_addrs[0][4] = 0xf8;
-    state.mac_addrs[0][5] = 0xcc;
-*/
-
-/* Turns IP adddress into string */
-static char * ipaddr_to_string(uint32_t s_addr, char *buf, int buflen)
-{
-    char inv[3];
-    char *rp;
-    u8_t *ap;
-    u8_t rem;
-    u8_t n;
-    u8_t i;
-    int len = 0;
-
-    rp = buf;
-    ap = (u8_t *)&s_addr;
-    for (n = 0; n < 4; n++) {
-    i = 0;
-    do {
-        rem = *ap % (u8_t)10;
-        *ap /= (u8_t)10;
-        inv[i++] = (char)('0' + rem);
-    } while (*ap);
-    while (i--) {
-        if (len++ >= buflen) {
-        return NULL;
-        }
-        *rp++ = inv[i];
-    }
-    if (len++ >= buflen) {
-        return NULL;
-    }
-    *rp++ = '.';
-    ap++;
-    }
-    *--rp = 0;
-    return buf;
-}
-
-/* Prints mac address */
-static void dump_mac(uint8_t *mac)
-{
-    for (unsigned i = 0; i < 6; i++) {
-        putC(hexchar((mac[i] >> 4) & 0xf));
-        putC(hexchar(mac[i] & 0xf));
-        if (i < 5) {
-            putC(':');
-        }
-    }
 }
 
 #ifdef NO_ASSERT
