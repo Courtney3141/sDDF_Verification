@@ -70,15 +70,15 @@ int extract_offset(uintptr_t phys, uintptr_t *offset) {
 static uint64_t get_time(void)
 {
     /* This should be done using read only memory like with idle.c and utilization_socket.c */
-    sel4cp_ppcall(TIMER_CH, sel4cp_msginfo_new(GET_TIME, 0));
+    microkit_ppcall(TIMER_CH, microkit_msginfo_new(GET_TIME, 0));
     uint64_t time_now = seL4_GetMR(0);
     return time_now;
 }
 
 static void set_timeout(uint64_t timeout)
 {
-    sel4cp_mr_set(0, timeout);
-    sel4cp_ppcall(TIMER_CH, sel4cp_msginfo_new(SET_TIMEOUT, 1));
+    microkit_mr_set(0, timeout);
+    microkit_ppcall(TIMER_CH, microkit_msginfo_new(SET_TIMEOUT, 1));
 }
 
 void tx_provide(void)
@@ -126,7 +126,7 @@ void tx_provide(void)
 
     if (enqueued && require_signal(state.tx_ring_drv.used_ring)) {
         cancel_signal(state.tx_ring_drv.used_ring);
-        sel4cp_notify_delayed(DRIVER);
+        microkit_notify_delayed(DRIVER);
     }
 }
 
@@ -160,12 +160,12 @@ void tx_return(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client] && require_signal(state.tx_ring_clients[client].free_ring)) {
             cancel_signal(state.tx_ring_clients[client].free_ring);
-            sel4cp_notify(client);
+            microkit_notify(client);
         }
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     if (ch == TIMER_CH) {
         /* We always assume that timeout is for client 1... */

@@ -79,22 +79,22 @@ void rx_return(void)
 
     if (enqueued && require_signal(rx_ring_cli.used_ring)) {
         cancel_signal(rx_ring_cli.used_ring);
-        sel4cp_notify(CLIENT_CH);
+        microkit_notify(CLIENT_CH);
     }
 
     if (enqueued && require_signal(rx_ring_mux.free_ring)) {
         cancel_signal(rx_ring_mux.free_ring);
-        sel4cp_notify_delayed(MUX_RX_CH);
+        microkit_notify_delayed(MUX_RX_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     rx_return();
 }
 
 void init(void)
 {
-    copy_ring_init_sys(sel4cp_name, &rx_ring_cli, rx_free_cli, rx_used_cli, &rx_ring_mux, rx_free_mux, rx_used_mux);
+    copy_ring_init_sys(microkit_name, &rx_ring_cli, rx_free_cli, rx_used_cli, &rx_ring_mux, rx_free_mux, rx_used_mux);
     buffers_init(rx_ring_cli.free_ring, 0, rx_ring_cli.free_ring->size);
 }

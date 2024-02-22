@@ -91,7 +91,7 @@ void tx_provide(void)
 
     if (enqueued && require_signal(state.tx_ring_drv.used_ring)) {
         cancel_signal(state.tx_ring_drv.used_ring);
-        sel4cp_notify_delayed(DRIVER);
+        microkit_notify_delayed(DRIVER);
     }
 }
 
@@ -125,12 +125,12 @@ void tx_return(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client] && require_signal(state.tx_ring_clients[client].free_ring)) {
             cancel_signal(state.tx_ring_clients[client].free_ring);
-            sel4cp_notify(client);
+            microkit_notify(client);
         }
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     tx_return();
     tx_provide();

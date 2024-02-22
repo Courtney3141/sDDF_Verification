@@ -87,7 +87,7 @@ void tx_provide(void)
 
     if (enqueued && require_signal(state.tx_ring_drv.used_ring)) {
         cancel_signal(state.tx_ring_drv.used_ring);
-        sel4cp_notify_delayed(DRIVER);
+        microkit_notify_delayed(DRIVER);
     }
 }
 
@@ -121,12 +121,12 @@ void tx_return(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client] && require_signal(state.tx_ring_clients[client].free_ring)) {
             cancel_signal(state.tx_ring_clients[client].free_ring);
-            sel4cp_notify(client + CLIENT_CH);
+            microkit_notify(client + CLIENT_CH);
         }
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     tx_return();
     tx_provide();
@@ -135,9 +135,9 @@ void notified(sel4cp_channel ch)
 void init(void)
 {
     ring_init(&state.tx_ring_drv, (ring_buffer_t *)tx_free_drv, (ring_buffer_t *)tx_used_drv, TX_RING_SIZE_DRIV);
-    mux_ring_init_sys(sel4cp_name, state.tx_ring_clients, tx_free_arp, tx_used_arp);
+    mux_ring_init_sys(microkit_name, state.tx_ring_clients, tx_free_arp, tx_used_arp);
     
-    mem_region_init_sys(sel4cp_name, state.buffer_region_vaddrs, buffer_data_region_arp_vaddr);
+    mem_region_init_sys(microkit_name, state.buffer_region_vaddrs, buffer_data_region_arp_vaddr);
 
     /* CDTODO: Can we make this system agnostic? */
     state.buffer_region_paddrs[0] = buffer_data_region_arp_paddr;

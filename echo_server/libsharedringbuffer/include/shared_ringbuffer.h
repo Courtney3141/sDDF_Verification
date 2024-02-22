@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <sel4cp.h>
+#include <microkit.h>
 
 #include "echo.h"
 #include "util.h"
