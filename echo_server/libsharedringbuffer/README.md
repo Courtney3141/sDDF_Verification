@@ -71,8 +71,8 @@ The driver wants to add a buffer that will be read by another component
 Head/Tail Mechanism
 -------------------
 
-Buffers from tail through to head - 1 inclusive are available to be used. Producers
-insert at the head index and consumers remove from the tail index.
+Buffers from head through to tail - 1 inclusive are available to be used. Producers
+insert at the tail index and consumers remove from the head index.
 
 T = Tail
 H = Head
@@ -81,9 +81,9 @@ F = Full
 
 If non-empty, the ring looks like either:
 0 <= T <= H < LENGTH
-[ E | E | TF | F | F | F | F | HE | E | E ]
+[ E | E | HF | F | F | F | F | TE | E | E ]
 
                OR
 
 0 <= H < T < LENGTH
-[ F | F | F | HE | E | E | E | TF | F | F ]
+[ F | F | F | TE | E | E | E | HF | F | F ]

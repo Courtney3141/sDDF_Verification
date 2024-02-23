@@ -33,7 +33,7 @@ uintptr_t uart_base;
 typedef struct state {
     ring_handle_t rx_ring_drv;
     ring_handle_t rx_ring_clients[NUM_CLIENTS];
-    uint8_t mac_addrs[NUM_CLIENTS][MAC_SIZE];
+    uint8_t mac_addrs[NUM_CLIENTS][ETH_HWADDR_LEN];
 } state_t;
 
 state_t state;
@@ -46,7 +46,7 @@ int get_client(struct eth_hdr * buffer)
 {
     for (int client = 0; client < NUM_CLIENTS; client++) {
         bool match = true;
-        for (int i = 0; (i < MAC_SIZE) && match; i++) if (buffer->dest.addr[i] != state.mac_addrs[client][i]) match = false;
+        for (int i = 0; (i < ETH_HWADDR_LEN) && match; i++) if (buffer->dest.addr[i] != state.mac_addrs[client][i]) match = false;
         if (match) return client;
     }
     return -1;

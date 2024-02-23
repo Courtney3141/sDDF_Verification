@@ -44,11 +44,11 @@ static void mac_addr_init_sys(char *pd_name, uint8_t *macs)
         set_mac_addr(macs, MAC_ADDR_CLI1);
     } else if (!strcmp(pd_name, "arp")) {
         set_mac_addr(macs, MAC_ADDR_CLI0);
-        set_mac_addr(&macs[MAC_SIZE], MAC_ADDR_CLI1);
+        set_mac_addr(&macs[ETH_HWADDR_LEN], MAC_ADDR_CLI1);
     } else if (!strcmp(pd_name, "mux_rx")) {
         set_mac_addr(macs, MAC_ADDR_ARP);
-        set_mac_addr(&macs[MAC_SIZE], MAC_ADDR_CLI0);
-        set_mac_addr(&macs[2*MAC_SIZE], MAC_ADDR_CLI1);
+        set_mac_addr(&macs[ETH_HWADDR_LEN], MAC_ADDR_CLI0);
+        set_mac_addr(&macs[2*ETH_HWADDR_LEN], MAC_ADDR_CLI1);
     }
 }
 

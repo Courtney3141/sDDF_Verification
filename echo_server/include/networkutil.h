@@ -2,17 +2,12 @@
 
 #include "util.h"
 
-#define MAC_SIZE 6
+#define ETH_HWADDR_LEN 6
 
-/* Turns IP adddress into string */
 static char * ipaddr_to_string(uint32_t s_addr, char *buf, int buflen)
 {
-    char inv[3];
-    char *rp;
-    u8_t *ap;
-    u8_t rem;
-    u8_t n;
-    u8_t i;
+    char inv[3], *rp;
+    u8_t *ap, rem, n, i;
     int len = 0;
 
     rp = buf;

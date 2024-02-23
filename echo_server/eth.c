@@ -65,7 +65,7 @@ ring_handle_t tx_ring;
 
 /* Network configuration */
 #define MAX_PACKET_SIZE     1536
-static uint8_t mac[MAC_SIZE];
+static uint8_t mac[ETH_HWADDR_LEN];
 
 /* Ethernet device address */
 volatile struct enet_regs *eth = (void *)(uintptr_t)0x2000000;
@@ -124,7 +124,7 @@ static void rx_provide(void)
             rx.descr_mdata[rx.tail] = buffer;
             update_ring_slot(&rx, rx.tail, buffer.phys_or_offset, 0, stat);
 
-            THREAD_MEMORY_RELEASE();
+            if (MULTICORE) THREAD_MEMORY_RELEASE();
 
             rx.tail = (rx.tail + 1) % rx.size;
         }
@@ -160,7 +160,7 @@ static void rx_return(void)
         buff_desc_t descr_mdata = rx.descr_mdata[rx.head];
         descr_mdata.len = d->len;
         
-        THREAD_MEMORY_RELEASE();
+        if (MULTICORE) THREAD_MEMORY_RELEASE();
 
         rx.head = (rx.head + 1) % rx.size;
 
@@ -190,7 +190,7 @@ static void tx_provide(void)
             tx.descr_mdata[tx.tail] = buffer;
             update_ring_slot(&tx, tx.tail, buffer.phys_or_offset, buffer.len, stat);
 
-            THREAD_MEMORY_RELEASE();
+            if (MULTICORE) THREAD_MEMORY_RELEASE();
 
             tx.tail = (tx.tail + 1) % tx.size;
             if (!(eth->tdar & TDAR_TDAR)) eth->tdar = TDAR_TDAR;
@@ -217,7 +217,7 @@ static void tx_return(void)
         buff_desc_t descr_mdata = tx.descr_mdata[tx.head];
         descr_mdata.len = 0;
 
-        THREAD_MEMORY_RELEASE();
+        if (MULTICORE) THREAD_MEMORY_RELEASE();
 
         tx.head = (tx.head + 1) % tx.size;
 

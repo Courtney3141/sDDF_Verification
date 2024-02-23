@@ -67,7 +67,7 @@ LWIP_MEMPOOL_DECLARE(
 typedef struct state {
     struct netif netif;
     /* mac address for this client */
-    uint8_t mac[MAC_SIZE];
+    uint8_t mac[ETH_HWADDR_LEN];
 
     /* Ring handles */
     ring_handle_t rx_ring;
