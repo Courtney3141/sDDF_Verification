@@ -114,8 +114,8 @@ static void print_benchmark_details(uint64_t pd_id, uint64_t kernel_util, uint64
         case PD_ARP_ID: printf("ARP"); break;
         case PD_TIMER_ID: printf("TIMER"); break;
     }
-    if (pd_id != PD_TOTAL) printf(" (%X)", pd_id);
-    printf("\n{\nKernelUtilisation: %X\nKernelEntries: %X\nNumberSchedules: %X\nTotalUtilisation: %X\n}\n", 
+    if (pd_id != PD_TOTAL) printf(" ( %llx)", pd_id);
+    printf("\n{\nKernelUtilisation:  %llx\nKernelEntries:  %llx\nNumberSchedules:  %llx\nTotalUtilisation:  %llx\n}\n", 
             kernel_util, kernel_entries, number_schedules, total_util);
 }
 #endif
@@ -145,12 +145,12 @@ static inline void seL4_BenchmarkTrackDumpSummary(benchmark_track_kernel_entry_t
         index++;
     }
 
-    printf("Number of system call invocations %X and fastpaths %X\n", syscall_entries, fastpaths);
-    printf("Number of interrupt invocations %X\n", interrupt_entries);
-    printf("Number of user-level faults %X\n", userlevelfault_entries);
-    printf("Number of VM faults %X\n", vmfault_entries);
-    printf("Number of debug faults %X\n", debug_fault);
-    printf("Number of others %X\n", other);
+    printf("Number of system call invocations  %llx and fastpaths  %llx\n", syscall_entries, fastpaths);
+    printf("Number of interrupt invocations  %llx\n", interrupt_entries);
+    printf("Number of user-level faults  %llx\n", userlevelfault_entries);
+    printf("Number of VM faults  %llx\n", vmfault_entries);
+    printf("Number of debug faults  %llx\n", debug_fault);
+    printf("Number of others  %llx\n", other);
 }
 #endif
 
@@ -177,7 +177,7 @@ void notified(microkit_channel ch)
             sel4bench_stop_counters(benchmark_bf);
 
             printf("{\n");
-            for (int i = 0; i < ARRAY_SIZE(benchmarking_events); i++) printf("%s: %X\n", counter_names[i], counter_values[i]);
+            for (int i = 0; i < ARRAY_SIZE(benchmarking_events); i++) printf("%s: %llX\n", counter_names[i], counter_values[i]);
             printf("}\n");
 
             #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
@@ -218,7 +218,7 @@ void notified(microkit_channel ch)
 
             #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
             entries = seL4_BenchmarkFinalizeLog();
-            printf("KernelEntries: %X\n", entries);
+            printf("KernelEntries:  %llx\n", entries);
             seL4_BenchmarkTrackDumpSummary(log_buffer, entries);
             #endif
 
@@ -250,7 +250,7 @@ void init(void)
 
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     int res_buf = seL4_BenchmarkSetLogBuffer(LOG_BUFFER_CAP);
-    if (res_buf) printf("Could not set log buffer: %X\n", res_buf);
+    if (res_buf) printf("Could not set log buffer:  %llx\n", res_buf);
     else printf("Log buffer set\n");
 #endif
 }

@@ -152,7 +152,7 @@ void enqueue_pbufs(struct pbuf *p)
 static err_t lwip_eth_send(struct netif *netif, struct pbuf *p)
 {
     if (p->tot_len > BUFF_SIZE) {
-        printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", p->tot_len, BUFF_SIZE);
+        printf("LWIP|ERROR: attempted to send a packet of size  %llx > BUFFER SIZE  %llx\n", p->tot_len, BUFF_SIZE);
         return ERR_MEM;
     }
 
@@ -187,8 +187,8 @@ void transmit(void)
     while (reprocess) {
         while(state.head != NULL && !ring_empty(state.tx_ring.free_ring)) {
             err_t err = lwip_eth_send(&state.netif, state.head);
-            if (err == ERR_MEM) printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", state.head->tot_len, BUFF_SIZE);
-            else if (err != ERR_OK) printf("LWIP|ERROR: unkown error when trying to send pbuf %X\n", state.head);
+            if (err == ERR_MEM) printf("LWIP|ERROR: attempted to send a packet of size  %llx > BUFFER SIZE  %llx\n", state.head->tot_len, BUFF_SIZE);
+            else if (err != ERR_OK) printf("LWIP|ERROR: unkown error when trying to send pbuf  %llx\n", state.head);
             
             struct pbuf *temp = state.head;
             state.head = temp->next_chain;

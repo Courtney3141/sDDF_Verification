@@ -61,7 +61,7 @@ void tx_provide(void)
 
                 if (buffer.phys_or_offset % BUFF_SIZE || 
                     buffer.phys_or_offset >= BUFF_SIZE * state.tx_ring_clients[client].used_ring->size) {
-                    printf("MUX_TX|LOG: Client %d provided offset %X which is not buffer aligned or outside of buffer region\n", client, buffer.phys_or_offset);
+                    printf("MUX_TX|LOG: Client %d provided offset  %llx which is not buffer aligned or outside of buffer region\n", client, buffer.phys_or_offset);
                     err = enqueue_free(&state.tx_ring_clients[client], buffer);
                     assert(!err);
                     continue;
