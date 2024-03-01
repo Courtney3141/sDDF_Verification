@@ -315,7 +315,6 @@ void init(void)
     setup_udp_socket();
     setup_utilization_socket();
     setup_tcp_socket();
-    setup_pcap_socket();
 
     if (notify_rx && require_signal(state.rx_ring.free_ring)) {
         cancel_signal(state.rx_ring.free_ring);

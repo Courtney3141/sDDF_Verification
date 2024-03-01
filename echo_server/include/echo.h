@@ -8,7 +8,6 @@
 #define UDP_ECHO_PORT 1235
 #define UTILIZATION_PORT 1236
 #define TCP_ECHO_PORT 1237
-#define PCAP_SOCKET 9999
 
 #define LINK_SPEED 1000000000 // Gigabit
 #define ETHER_MTU 1500
@@ -16,6 +15,3 @@
 int setup_udp_socket(void);
 int setup_utilization_socket(void);
 int setup_tcp_socket(void);
-
-extern struct tcp_pcb* pcap_target;
-int setup_pcap_socket(void);
