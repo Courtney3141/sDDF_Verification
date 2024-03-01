@@ -91,11 +91,11 @@ static err_t tcp_echo_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t
     printf("----- %u: recv: tot_len=%d queuelen=%d sndbuf=%d qhead=%d qtail=%d qcap=%d\n",
         sys_now(),
         p->tot_len,
-        (int) pcb->snd_queuelen,
-        (int) tcp_sndbuf(pcb),
-        (int) echo_queue.head,
-        (int) echo_queue.tail,
-        (int) echo_queue_capacity()
+        pcb->snd_queuelen,
+        tcp_sndbuf(pcb),
+        echo_queue.head,
+        echo_queue.tail,
+        echo_queue_space()
     );
     */
 
@@ -117,17 +117,16 @@ static err_t tcp_echo_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t
         return ERR_MEM;
     }
 
-    struct pbuf* data = NULL;
     u16_t offset = 0;
     while (offset < capacity) {
         const u16_t copied_len = pbuf_copy_partial(
             p,
-            echo_queue.buf + echo_queue.head,
+            echo_queue.buf + echo_queue.tail,
             min(echo_queue_contiguous_space(), capacity - offset),
             offset
         );
 
-        err = tcp_write(pcb, echo_queue.buf + echo_queue.head, copied_len, 0);
+        err = tcp_write(pcb, echo_queue.buf + echo_queue.tail, copied_len, 0);
         if (err) {
             printf("Failed to tcp_write: %s\n", lwip_strerr(err));
             printf("  snd_queuelen=%d snd_buf=%d\n", pcb->snd_queuelen, pcb->snd_buf);
