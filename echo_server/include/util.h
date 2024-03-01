@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #define UART_REG(x) ((volatile uint32_t *)(UART_BASE + (x)))
 #define UART_BASE 0x5000000 //0x30890000 in hardware on imx8mm.
 #define STAT 0x98
@@ -20,6 +22,9 @@
 #define likely(x)   (!!(x))
 #define unlikely(x) (!!(x))
 #endif
+
+static inline intmax_t min(intmax_t a, intmax_t b) { return a > b ? b : a; }
+static inline intmax_t max(intmax_t a, intmax_t b) { return a > b ? a : b; }
 
 static void putC(uint8_t ch)
 {
