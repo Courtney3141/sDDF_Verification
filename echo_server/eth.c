@@ -200,6 +200,9 @@ static void rx_return(void)
         cancel_signal(rx_ring.used_ring);
         microkit_notify(RX_CH);
     }
+
+    const uint32_t hw_rx_size = (rx.head + rx.size - rx.tail) % rx.size;
+    if (hw_rx_size < 100) printf("ETH|LOG: hw_rx_size=%u\n", hw_rx_size);
 }
 
 static void tx_provide(void)
@@ -389,4 +392,8 @@ void notified(microkit_channel ch)
             printf("ETH|LOG: received notification on unexpected channel: %X\n", ch);
             break;
     }
+
+
+    const uint32_t free_size = ring_size((ring_buffer_t*) rx_free);
+    if (free_size < 100) printf("ETH|LOG: ring_size(rx_free)=%u\n", free_size);
 }
