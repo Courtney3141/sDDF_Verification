@@ -37,7 +37,7 @@ static char * ipaddr_to_string(uint32_t s_addr, char *buf, int buflen)
 
 static void dump_mac(uint64_t mac)
 {
-    printf("%02x:%02x:%02x:%02x:%02x:%02x\n", mac >> 40, mac >> 32 & 0xff, mac >> 24 & 0xff, mac >> 16 & 0xff, mac >> 8 & 0xff, mac & 0xff);
+    printf("%02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", mac >> 40, mac >> 32 & 0xff, mac >> 24 & 0xff, mac >> 16 & 0xff, mac >> 8 & 0xff, mac & 0xff);
 }
 
 static void set_mac_addr(uint8_t *mac, uint64_t val)

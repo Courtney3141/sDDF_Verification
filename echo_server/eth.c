@@ -363,7 +363,7 @@ void notified(microkit_channel ch)
             tx_provide();
             break;
         default:
-            printf("ETH|LOG: received notification on unexpected channel: %lu\n", ch);
+            printf("ETH|LOG: received notification on unexpected channel: %u\n", ch);
             break;
     }
 }

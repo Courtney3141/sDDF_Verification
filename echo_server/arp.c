@@ -185,7 +185,7 @@ seL4_MessageInfo_t protected(microkit_channel ch, microkit_msginfo msginfo)
             ipv4_addrs[client] = ip_addr;
             break;
         default:
-            printf("ARP|LOG: PPC from client%d with unknown message label:  %llx\n", ch);
+            printf("ARP|LOG: PPC from client%d with unknown message label:  %x\n", client, ch);
             break;
     }
 
