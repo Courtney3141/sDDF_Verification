@@ -190,7 +190,7 @@ void transmit(void)
         while(state.head != NULL && !ring_empty(state.tx_ring.free_ring) && !ring_full(state.tx_ring.used_ring)) {
             err_t err = lwip_eth_send(&state.netif, state.head);
             if (err == ERR_MEM) printf("LWIP|ERROR: attempted to send a packet of size %X > BUFFER SIZE %X\n", state.head->tot_len, BUF_SIZE);
-            else if (err != ERR_OK) printf("LWIP|ERROR: unkown error when trying to send pbuf %X\n", state.head);
+            else if (err != ERR_OK) printf("LWIP|ERROR: unkown error when trying to send pbuf %lX\n", state.head);
             
             struct pbuf *temp = state.head;
             state.head = temp->next_chain;
@@ -351,7 +351,7 @@ void notified(microkit_channel ch)
             receive();
             break;
         default:
-            printf("LWIP|LOG: received notification on unexpected channel: \n", ch);
+            printf("LWIP|LOG: received notification on unexpected channel: %d\n", ch);
             break;
     }
     

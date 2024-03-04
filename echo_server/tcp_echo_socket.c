@@ -102,7 +102,7 @@ static err_t tcp_echo_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t
 
         err = tcp_write(pcb, state->buf + state->tail, copied_len, 0);
         if (err) {
-            printf("tcp_echo[%s]: failed to write: %s\n", state, lwip_strerr(err));
+            printf("tcp_echo[%p]: failed to write: %s\n", state, lwip_strerr(err));
             assert(false);
         }
 

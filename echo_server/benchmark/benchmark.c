@@ -114,8 +114,8 @@ static void print_benchmark_details(uint64_t pd_id, uint64_t kernel_util, uint64
         case PD_ARP_ID: printf("ARP"); break;
         case PD_TIMER_ID: printf("TIMER"); break;
     }
-    if (pd_id != PD_TOTAL) printf(" (%X)", pd_id);
-    printf("\n{\nKernelUtilisation: %X\nKernelEntries: %X\nNumberSchedules: %X\nTotalUtilisation: %X\n}\n", 
+    if (pd_id != PD_TOTAL) printf(" (%lX)", pd_id);
+    printf("\n{\nKernelUtilisation: %lX\nKernelEntries: %lX\nNumberSchedules: %lX\nTotalUtilisation: %lX\n}\n", 
             kernel_util, kernel_entries, number_schedules, total_util);
 }
 #endif
@@ -177,7 +177,7 @@ void notified(microkit_channel ch)
             sel4bench_stop_counters(benchmark_bf);
 
             printf("{\n");
-            for (int i = 0; i < ARRAY_SIZE(benchmarking_events); i++) printf("%s: %X\n", counter_names[i], counter_values[i]);
+            for (int i = 0; i < ARRAY_SIZE(benchmarking_events); i++) printf("%s: %lX\n", counter_names[i], counter_values[i]);
             printf("}\n");
 
             #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
