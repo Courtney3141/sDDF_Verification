@@ -55,20 +55,28 @@ static err_t tcp_echo_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t
 
     if (p == NULL) {
         // closing
-        printf("tcp_echo[%p]: closing\n", state);
+        printf("tcp_echo[%s:%d]: closing\n",
+            ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port
+        );
 
         // TODO is this a use-after-free?
         LWIP_MEMPOOL_FREE(tcp_echo_state, state);
 
         err = tcp_close(pcb);
         if (err) {
-            printf("tcp_echo[%p]: close error: %s\n", state, lwip_strerr(err));
+            printf("tcp_echo[%s:%d]: close error: %s\n",
+                ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port,
+                lwip_strerr(err)
+            );
             return err;
         }
         return ERR_OK;
     }
     if (err) {
-        printf("tcp_echo[%p]: recv error: %s\n", state, lwip_strerr(err));
+        printf("tcp_echo[%s:%d]: recv error: %s\n",
+            ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port,
+            lwip_strerr(err)
+        );
         return err;
     }
 
@@ -76,8 +84,8 @@ static err_t tcp_echo_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t
 
     const size_t capacity = MIN(MIN(queue_space(state), tcp_sndbuf(pcb)), p->tot_len);
     if (p->tot_len > capacity) {
-        printf("tcp_echo[%p]: can't handle packet of %d bytes: queue_space=%lu sndbuf=%d snd_queuelen=%d\n",
-            state,
+        printf("tcp_echo[%s:%d]: can't handle packet of %d bytes: queue_space=%lu sndbuf=%d snd_queuelen=%d\n",
+            ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port,
             p->tot_len,
             queue_space(state),
             tcp_sndbuf(pcb),
@@ -102,7 +110,10 @@ static err_t tcp_echo_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t
 
         err = tcp_write(pcb, state->buf + state->tail, copied_len, 0);
         if (err) {
-            printf("tcp_echo[%p]: failed to write: %s\n", state, lwip_strerr(err));
+            printf("tcp_echo[%s:%d]: failed to write: %s\n",
+                ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port,
+                lwip_strerr(err)
+            );
             assert(false);
         }
 
@@ -120,7 +131,7 @@ static void tcp_echo_err(void* arg, err_t err)
 {
     struct echo_state* state = arg;
 
-    printf("tcp_echo[%p]: %s\n", arg, lwip_strerr(err));
+    printf("tcp_echo: %s\n", lwip_strerr(err));
 
     LWIP_MEMPOOL_FREE(tcp_echo_state, state);
 }
@@ -133,10 +144,8 @@ static err_t tcp_echo_accept(void* arg, struct tcp_pcb* pcb, err_t err)
         return ERR_MEM;
     }
 
-    printf("tcp_echo[%p]: accept from %s port %d\n",
-        state,
-        ipaddr_ntoa(&pcb->remote_ip),
-        pcb->remote_port
+    printf("tcp_echo[%s:%d]: accept\n",
+        ipaddr_ntoa(&pcb->remote_ip), pcb->remote_port
     );
 
     state->tail = 0;

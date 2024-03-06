@@ -44,13 +44,23 @@
 #define CHECKSUM_GEN_ICMP               0
 #define CHECKSUM_GEN_ICMP6              0
 
-#define TCP_SND_QUEUELEN 2500
-#define MEMP_NUM_TCP_SEG TCP_SND_QUEUELEN
-#define TCP_SND_BUF (100 * TCP_MSS)
-#define TCP_WND (100 * TCP_MSS)
-#define LWIP_WND_SCALE 1
-#define TCP_RCV_SCALE 10
+#define TCP_MSS 1260 // maximum segment size, max size of a single packet
+#define TCP_SND_BUF (50 * TCP_MSS) // send buffer space
+#define TCP_SND_QUEUELEN 2500 // max queued pbufs
+#define TCP_WND (50 * TCP_MSS) // tcp window, max data we can receive at once
+
+// out of sequence handling
+#define TCP_QUEUE_OOSEQ 1
+
+#define LWIP_WND_SCALE 1 // support window sizes > 65536
+#define TCP_RCV_SCALE 12
+
+#define LWIP_TCP_SACK_OUT 1 // support sending selective acknowledgements
+#define LWIP_TCP_TIMESTAMPS 1 // support tcp timestamp option
+
 #define PBUF_POOL_SIZE 1000
+#define MEMP_NUM_PBUF TCP_SND_QUEUELEN
+#define MEMP_NUM_TCP_SEG TCP_SND_QUEUELEN
 #define MEMP_NUM_SYS_TIMEOUT 512
 
 /* Set this to 0 for performance */
@@ -66,7 +76,7 @@
     (p)->next_chain = NULL;
 
 /* Debugging options */
-#define LWIP_DEBUG
+#define LWIP_DEBUG // we always want this on
 /* Change this to LWIP_DBG_LEVEL_ALL to see a trace 
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
 
