@@ -109,6 +109,10 @@ void rx_provide(void)
                 assert(!buffer.phys_or_offset % BUFF_SIZE && 
                         buffer.phys_or_offset < BUFF_SIZE * state.rx_ring_clients[client].free_ring->size);
 
+                err = seL4_ARM_VSpace_Invalidate_Data(3, buffer.phys_or_offset + buffer_data_vaddr, buffer.phys_or_offset + buffer_data_vaddr + BUFF_SIZE);
+                if (err) printf("MUX_RX|ERROR: ARM Vspace invalidate 2 failed with err %d\n", err);
+                assert(!err);
+
                 buffer.phys_or_offset = buffer.phys_or_offset + buffer_data_paddr;
                 err = enqueue_free(&state.rx_ring_drv, buffer);
                 assert(!err);
