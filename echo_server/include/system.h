@@ -26,8 +26,6 @@
 #define RX_RING_SIZE_COPY1 RX_RING_SIZE_DRIV
 #define RX_RING_SIZE_DRIV 512
 
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
-
 _Static_assert(MAX_BUFFS >= TX_RING_SIZE_DRIV, "Shared ring buffer capacity must be >= largest TX ring.");
 _Static_assert(MAX_BUFFS >= MAX(RX_RING_SIZE_DRIV, MAX(RX_RING_SIZE_CLI0, RX_RING_SIZE_CLI1)), "Shared ring buffer capacity must be >=  largest RX ring.");
 _Static_assert(TX_RING_SIZE_DRIV >= TX_RING_SIZE_ARP + TX_RING_SIZE_CLI0 + TX_RING_SIZE_CLI1, "Driver TX ring buffer must have capacity to fit all of client's TX buffers.");
