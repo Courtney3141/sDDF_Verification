@@ -137,7 +137,7 @@ void process_tx_ready(void)
 
     if (state.tx_ring_drv.used_ring->notify_reader && enqueued) {
         state.tx_ring_drv.used_ring->notify_reader = false;
-        sel4cp_notify_delayed(DRIVER_SEND);
+        microkit_notify_delayed(DRIVER_SEND);
     }
 }
 
@@ -183,12 +183,12 @@ void process_tx_complete(void)
     for (int client = 0; client < NUM_CLIENTS; client++) {
         if (notify_clients[client]) {
             state.tx_ring_clients[client].free_ring->notify_reader = false;
-            sel4cp_notify(client);
+            microkit_notify(client);
         }
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     process_tx_complete();
     process_tx_ready();

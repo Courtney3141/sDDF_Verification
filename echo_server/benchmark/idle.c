@@ -4,7 +4,7 @@
  */
 
 #include <stdint.h>
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include <sel4/benchmark_track_types.h>
 #include "sel4bench.h"
@@ -49,7 +49,7 @@ void count_idle(void)
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     // init is complete so we can start counting.
     count_idle();

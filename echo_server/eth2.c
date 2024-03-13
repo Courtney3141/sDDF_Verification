@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include "eth.h"
 #include "shared_ringbuffer.h"
@@ -101,16 +101,16 @@ handle_tx(volatile struct enet_regs *eth)
 }
 
 seL4_MessageInfo_t
-protected(sel4cp_channel ch, sel4cp_msginfo msginfo)
+protected(microkit_channel ch, microkit_msginfo msginfo)
 {
     if (initialised) {
         handle_tx(eth);
     }
 
-    return sel4cp_msginfo_new(0, 0);
+    return microkit_msginfo_new(0, 0);
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     if (!initialised) {
         if (ch != ETH_INIT) {
@@ -130,8 +130,8 @@ void notified(sel4cp_channel ch)
 
 void init(void)
 {
-    sel4cp_dbg_puts(sel4cp_name);
-    sel4cp_dbg_puts(": elf PD init function running\n");
+    microkit_dbg_puts(microkit_name);
+    microkit_dbg_puts(": elf PD init function running\n");
 
     ring_init(&tx_ring, (ring_buffer_t *)tx_free, (ring_buffer_t *)tx_used, 0, NUM_BUFFERS, NUM_BUFFERS);
 }

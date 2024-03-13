@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include "eth.h"
 #include "shared_ringbuffer.h"
@@ -237,7 +237,7 @@ handle_rx(volatile struct enet_regs *eth)
      */
     if (packets_transferred && rx_ring.used_ring->notify_reader) {
         rx_ring.used_ring->notify_reader = false;
-        sel4cp_notify(RX_CH);
+        microkit_notify(RX_CH);
     }
 }
 
@@ -323,7 +323,7 @@ complete_tx(volatile struct enet_regs *eth)
 
     if (enqueued && tx_ring.free_ring->notify_reader) {
         tx_ring.free_ring->notify_reader = false;
-        sel4cp_notify(TX_CH);
+        microkit_notify(TX_CH);
     }
 }
 
@@ -355,9 +355,9 @@ static void
 eth_setup(void)
 {
     get_mac_addr(eth, mac);
-    sel4cp_dbg_puts("MAC: ");
+    microkit_dbg_puts("MAC: ");
     dump_mac(mac);
-    sel4cp_dbg_puts("\n");
+    microkit_dbg_puts("\n");
 
     /* set up descriptor rings */
     rx.cnt = RX_COUNT;
@@ -444,7 +444,7 @@ eth_setup(void)
 
 void init(void)
 {
-    print(sel4cp_name);
+    print(microkit_name);
     print(": elf PD init function running\n");
 
     eth_setup();
@@ -463,16 +463,16 @@ void init(void)
 }
 
 void
-notified(sel4cp_channel ch)
+notified(microkit_channel ch)
 {
     switch(ch) {
         case IRQ_CH:
             handle_eth(eth);
             /*
              * Delay calling into the kernel to ack the IRQ until the next loop
-             * in the seL4CP event handler loop.
+             * in the microkit event handler loop.
              */
-            sel4cp_irq_ack_delayed(ch);
+            microkit_irq_ack_delayed(ch);
             break;
         case RX_CH:
             fill_rx_bufs();

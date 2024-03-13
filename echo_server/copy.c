@@ -99,17 +99,17 @@ void process_rx_complete(void)
 
     if (rx_ring_cli.used_ring->notify_reader && enqueued) {
         rx_ring_cli.used_ring->notify_reader = false;
-        sel4cp_notify(CLIENT_CH);
+        microkit_notify(CLIENT_CH);
     }
 
     /* We want to inform the mux that more free buffers are available */
     if (enqueued && rx_ring_mux.free_ring->notify_reader) {
         rx_ring_mux.free_ring->notify_reader = false;
-        sel4cp_notify_delayed(MUX_RX_CH);
+        microkit_notify_delayed(MUX_RX_CH);
     }
 }
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     /* We have one job. */
     process_rx_complete();
