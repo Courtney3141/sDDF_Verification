@@ -44,7 +44,7 @@
 #define CHECKSUM_GEN_ICMP               0
 #define CHECKSUM_GEN_ICMP6              0
 
-#define TCP_MSS 1260 // maximum segment size, max size of a single packet
+#define TCP_MSS 2000 // maximum segment size, max size of a single packet
 #define TCP_SND_BUF (50 * TCP_MSS) // send buffer space
 #define TCP_SND_QUEUELEN 2500 // max queued pbufs
 #define TCP_WND (50 * TCP_MSS) // tcp window, max data we can receive at once

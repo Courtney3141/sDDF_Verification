@@ -12,18 +12,35 @@
 #define ECHO_QUEUE_SIZE (TCP_WND + 1)
 
 struct echo_state {
+    bool in_use;
     // sending ring buffer
     size_t tail; // data gets added at tail
     size_t head; // moved forward for acknowledged data
     char buf[ECHO_QUEUE_SIZE];
 };
 
-LWIP_MEMPOOL_DECLARE(
-    tcp_echo_state,
-    8,
-    sizeof(struct echo_state),
-    "TCP echo server connection state"
-);
+// This previously was a LWIP_MEMPOOL, but turns out that doesn't support sizes
+// greater than ~65536 (due to integer overflow somewhere).
+#define MAX_CONCURRENT 8
+static struct echo_state tcp_state_pool[MAX_CONCURRENT];
+
+static struct echo_state* tcp_state_alloc()
+{
+    for (int i = 0; i < MAX_CONCURRENT; ++i) {
+        if (!tcp_state_pool[i].in_use) {
+            tcp_state_pool[i].in_use = true;
+            return &tcp_state_pool[i];
+        }
+    }
+    assert(false && "exceeded capacity");
+}
+
+static void tcp_state_free(struct echo_state* state)
+{
+    assert(state);
+    assert(state->in_use);
+    state->in_use = false;
+}
 
 static size_t queue_space(struct echo_state* state)
 {
@@ -60,7 +77,7 @@ static err_t tcp_echo_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err_t
         );
 
         // TODO is this a use-after-free?
-        LWIP_MEMPOOL_FREE(tcp_echo_state, state);
+        tcp_state_free(state);
 
         err = tcp_close(pcb);
         if (err) {
@@ -133,12 +150,12 @@ static void tcp_echo_err(void* arg, err_t err)
 
     printf("tcp_echo: %s\n", lwip_strerr(err));
 
-    LWIP_MEMPOOL_FREE(tcp_echo_state, state);
+    tcp_state_free(state);
 }
 
 static err_t tcp_echo_accept(void* arg, struct tcp_pcb* pcb, err_t err)
 {
-    struct echo_state* state = LWIP_MEMPOOL_ALLOC(tcp_echo_state);
+    struct echo_state* state = tcp_state_alloc();
     if (state == NULL) {
         printf("tcp_echo: failed to alloc state\n");
         return ERR_MEM;
@@ -162,8 +179,6 @@ static err_t tcp_echo_accept(void* arg, struct tcp_pcb* pcb, err_t err)
 
 int setup_tcp_socket(void)
 {
-    LWIP_MEMPOOL_INIT(tcp_echo_state);
-
     struct tcp_pcb* pcb;
 
     pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
