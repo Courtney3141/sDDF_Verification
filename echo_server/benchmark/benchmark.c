@@ -4,7 +4,7 @@
  */
 
 #include <stdint.h>
-#include <sel4cp.h>
+#include <microkit.h>
 #include <sel4/sel4.h>
 #include <sel4/benchmark_track_types.h>
 #include <sel4/benchmark_utilisation_types.h>
@@ -61,7 +61,7 @@ event_id_t benchmarking_events[] = {
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 static void
-sel4cp_benchmark_start(void)
+microkit_benchmark_start(void)
 {
     seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
     // seL4_BenchmarkResetThreadUtilisation(BASE_TCB_CAP + PD_ETH);
@@ -76,7 +76,7 @@ sel4cp_benchmark_start(void)
 }
 
 static void
-sel4cp_benchmark_stop(uint64_t *total, uint64_t* idle, uint64_t *kernel, uint64_t *entries)
+microkit_benchmark_stop(uint64_t *total, uint64_t* idle, uint64_t *kernel, uint64_t *entries)
 {
     seL4_BenchmarkFinalizeLog();
     seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
@@ -89,7 +89,7 @@ sel4cp_benchmark_stop(uint64_t *total, uint64_t* idle, uint64_t *kernel, uint64_
 }
 
 static void
-sel4cp_benchmark_stop_tcb(uint64_t pd_id, uint64_t *total, uint64_t *number_schedules, uint64_t *kernel, uint64_t *entries)
+microkit_benchmark_stop_tcb(uint64_t pd_id, uint64_t *total, uint64_t *number_schedules, uint64_t *kernel, uint64_t *entries)
 {
     seL4_BenchmarkGetThreadUtilisation(BASE_TCB_CAP + pd_id);
     uint64_t *buffer = (uint64_t *)&seL4_GetIPCBuffer()->msg[0];
@@ -182,7 +182,7 @@ static inline void seL4_BenchmarkTrackDumpSummary(benchmark_track_kernel_entry_t
 #endif
 
 
-void notified(sel4cp_channel ch)
+void notified(microkit_channel ch)
 {
     switch(ch) {
         case START:
@@ -192,14 +192,14 @@ void notified(sel4cp_channel ch)
             sel4bench_start_counters(benchmark_bf);
 
             #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
-            sel4cp_benchmark_start();
+            microkit_benchmark_start();
             #endif
 
             #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
             seL4_BenchmarkResetLog();
             #endif
 
-            sel4cp_notify(NOTIFY_START);
+            microkit_notify(NOTIFY_START);
             break;
         case STOP:
             sel4bench_get_counters(benchmark_bf, &counter_values[0]);
@@ -220,31 +220,31 @@ void notified(sel4cp_channel ch)
             uint64_t entries;
             uint64_t idle;
             // uint64_t number_schedules;
-            sel4cp_benchmark_stop(&total, &idle, &kernel, &entries);
+            microkit_benchmark_stop(&total, &idle, &kernel, &entries);
             print_benchmark_details(TCB_CAP, kernel, entries, idle, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_ETH, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_ETH, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_ETH, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_MUX_RX, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_MUX_RX, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_MUX_RX, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_MUX_TX, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_MUX_TX, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_MUX_TX, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_ARP, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_ARP, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_ARP, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_COPY0, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_COPY0, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_COPY0, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_CLIENT0, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_CLIENT0, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_CLIENT0, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_TIMER, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_TIMER, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_TIMER, kernel, entries, number_schedules, total);
 
-            // sel4cp_benchmark_stop_tcb(PD_ETH2, &total, &number_schedules, &kernel, &entries);
+            // microkit_benchmark_stop_tcb(PD_ETH2, &total, &number_schedules, &kernel, &entries);
             // print_benchmark_details(PD_ETH2, kernel, entries, number_schedules, total);
 
             #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
@@ -255,7 +255,7 @@ void notified(sel4cp_channel ch)
             seL4_BenchmarkTrackDumpSummary(log_buffer, entries);
             #endif
             THREAD_MEMORY_RELEASE();
-            sel4cp_notify(NOTIFY_STOP);
+            microkit_notify(NOTIFY_STOP);
             break;
         default:
             print("Bench thread notified on unexpected channel\n");
@@ -284,10 +284,10 @@ void init(void)
     benchmark_bf = mask;
 
     // Notify the idle thread that the sel4bench library is initialised.
-    sel4cp_notify(IDLE0);
-    sel4cp_notify(IDLE1);
-    sel4cp_notify(IDLE2);
-    sel4cp_notify(IDLE3);
+    microkit_notify(IDLE0);
+    microkit_notify(IDLE1);
+    microkit_notify(IDLE2);
+    microkit_notify(IDLE3);
 
 #ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     int res_buf = seL4_BenchmarkSetLogBuffer(LOG_BUFFER_CAP);
